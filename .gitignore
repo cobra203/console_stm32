@@ -1,0 +1,7 @@
+!.gitignore
+Debug/*
+*.dep
+settings/*
+*.o
+*.d
+*.i
