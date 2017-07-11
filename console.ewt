@@ -173,6 +173,12 @@
   <group>
     <name>lib</name>
     <file>
+      <name>$PROJ_DIR$\user\inc\button.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\inc\stm32f0xx_conf.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\lib\inc\stm32f0xx_gpio.h</name>
     </file>
   </group>
@@ -181,6 +187,9 @@
   </group>
   <group>
     <name>src</name>
+    <file>
+      <name>$PROJ_DIR$\user\src\button.c</name>
+    </file>
     <file>
       <name>$PROJ_DIR$\user\src\main.c</name>
     </file>
