@@ -6,6 +6,8 @@
 
 int button_check_active(BUTTON_S *button)
 {
+    int interval = 0;
+    
     /* shack process */
     if(button->state.shack) {
         if((button->state.shack == SHACK_OLD_PRESS  && button->state.press) ||
@@ -17,7 +19,7 @@ int button_check_active(BUTTON_S *button)
             button->state.duration = 0;
         }
 
-        if(button->state.duration >= SHACK_INTERVAL) {
+        if(button->state.duration >= button->interval.shack) {
             button->state.shack     = 0;
             button->state.duration  = 0;
             if(!button->state.effective && button->state.press) {
@@ -45,7 +47,8 @@ int button_check_active(BUTTON_S *button)
         }
         else {
             button->state.duration++;
-            if(button->state.duration >= (button->state.effective == ECT_PRESSED ? FOCUSED_INTERVAL : PRESSED_INTERVAL)) {
+            interval = button->state.effective == ECT_PRESSED ? button->interval.focused : button->interval.pressed;
+            if(button->state.duration >= interval) {
                 button->state.duration  = 0;
                 button->state.effective = ECT_FOCUSED;
                 button->state.avtice    = 1;

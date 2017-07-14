@@ -7,10 +7,6 @@
 
 #include <stm32f0xx.h>
 
-#define SHACK_INTERVAL   1
-#define PRESSED_INTERVAL 3
-#define FOCUSED_INTERVAL 20
-
 typedef enum btn_effective_e
 {
     ECT_LOOSE = 0,
@@ -33,13 +29,21 @@ typedef struct btn_state_s
     uint16_t    duration    :10;
 } BTN_STATE_S;
 
+typedef struct btn_interval_s
+{
+    uint8_t     shack;
+    uint8_t     pressed;
+    uint16_t    focused;
+} BTN_INTERVAL_S;
+
 typedef struct button_s
 {
-    BTN_STATE_S state;
-    uint8_t     type;
-    int         (*is_press)(void *);
-    int         (*check_active)(struct button_s *);
-    int         (*process)(struct button_s *);
+    BTN_STATE_S     state;
+    uint8_t         type;
+    BTN_INTERVAL_S  interval;
+    int             (*is_press)(void *);
+    int             (*check_active)(struct button_s *);
+    int             (*process)(struct button_s *);
 } BUTTON_S;
 
 int button_check_active(BUTTON_S *button);
