@@ -13,14 +13,15 @@ typedef enum btn_type_e
     BTN_TYPE_SPK,  
 } BTN_TYPE_E;
 
-static int _pairing_process(BUTTON_S *btn)
+static void _pairing_process(CC85XX_PAIR_S *pair)
 {
-    if(btn->state.avtice) {
-        btn->state.avtice = 0;
-        DEBUG("[%d]:pairing\n", btn->type);
+    int i;
+    for(i = 0; i < sizeof(pair->btn_pair)/sizeof(BUTTON_S); i++) {
+        if(pair->btn_pair[i].state.avtice) {
+            pair->btn_pair[i].state.avtice = 0;
+            DEBUG("[%d]:pairing\n", pair->btn_pair[i].type);
+        }
     }
-
-    return 0;
 }
 
 void pair_init(VOCAL_SYS_S *sys_status)
@@ -43,14 +44,13 @@ void pair_init(VOCAL_SYS_S *sys_status)
 
     for(i = 0; i < sizeof(cc85xx_pair.btn_pair)/sizeof(BUTTON_S); i++) {
         cc85xx_pair.btn_pair[i].check_active      = button_check_active;
-        cc85xx_pair.btn_pair[i].process           = _pairing_process;
         cc85xx_pair.btn_pair[i].type              = i;
         cc85xx_pair.btn_pair[i].interval.shack    = 3;
         cc85xx_pair.btn_pair[i].interval.pressed  = 20;
         cc85xx_pair.btn_pair[i].interval.focused  = 100;
     }
-
-    sys_status->pair = &cc85xx_pair;
+    cc85xx_pair.process = _pairing_process;
+    sys_status->pair    = &cc85xx_pair;
     
 }
 
@@ -64,7 +64,7 @@ void pair_detect(VOCAL_SYS_S *sys_status)
 
     for(i = 0; i < sizeof(cc85xx_pair.btn_pair)/sizeof(BUTTON_S); i++) {
         cc85xx_pair.btn_pair[i].check_active(&cc85xx_pair.btn_pair[i]);
-        cc85xx_pair.btn_pair[i].process(&cc85xx_pair.btn_pair[i]);
     }
+    cc85xx_pair.process(&cc85xx_pair);
 }
 

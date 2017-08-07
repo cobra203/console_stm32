@@ -27,11 +27,17 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <stm32f0xx_rcc.h>
+#include <core_cm0.h>
+#include <stm32f0xx_misc.h>
 
 #include <debug.h>
 #include <cc85xx_pair.h>
 #include <cc85xx_dev.h>
 #include <vocal_sys.h>
+#include <vocal_record.h>
+#include <stm32_common.h>
+#include <stm32_timer.h>
+#include <vocal_led.h>
 
 /** @addtogroup STM32F0xx_StdPeriph_Templates
   * @{
@@ -50,7 +56,10 @@ static void rcc_config(void)
 
     /* HSE = 24M */
     RCC_HSEConfig(RCC_HSE_ON);
- 
+#if 1
+    BIT_SET(RCC->CR, RCC_FLAG_HSERDY);
+    BIT_SET(RCC->CR, RCC_FLAG_HSIRDY);
+#endif    
     if(RCC_WaitForHSEStartUp() != ERROR) { 
         /* PLL = HSE * RCC_PLLSource_PREDIV1 * 2 = 48M */
         RCC_PREDIV1Config(RCC_PREDIV1_Div1);
@@ -67,12 +76,17 @@ static void rcc_config(void)
         RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_12);
         RCC_PLLCmd(ENABLE);
     }
-
-    //while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
+#if 1
+    BIT_SET(RCC->CR, RCC_FLAG_PLLRDY);
+#endif
+    while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
 
     /* SYSCLK = PLLCLK = 48M */
-    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK); 
-    //while(RCC_GetSYSCLKSource() != 0x08);
+    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+#if 1
+    BIT_SET(RCC->CFGR, 3);
+#endif
+    while(RCC_GetSYSCLKSource() != 0x08);
 
     /* AHB CLK(HCLK) = SYS CLK = 48M */
     RCC_HCLKConfig(RCC_SYSCLK_Div1);
@@ -82,9 +96,13 @@ static void rcc_config(void)
     /* Set Flash Latency */
     FLASH_PrefetchBufferCmd(ENABLE);
     FLASH_SetLatency(FLASH_Latency_1);
+
+    SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
     
-    RCC_APB2PeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 }
 
 /**
@@ -94,7 +112,9 @@ static void rcc_config(void)
   */
 int main(void)
 {
+    //while(1);
     VOCAL_SYS_S vocal_sys_s;
+    
     /*!< At this stage the microcontroller clock setting is already configured, 
        this is done through SystemInit() function which is called from startup
        file (startup_stm32f0xx.s) before to branch to application main.
@@ -108,6 +128,20 @@ int main(void)
     rcc_config();
 #endif
 
+    if (SysTick_Config(SystemCoreClock / 1000)) { 
+        /* Capture error */ 
+        while (1);
+    }
+
+    timer_init();
+    
+
+    record_init(&vocal_sys_s);
+    led_init(&vocal_sys_s);
+    while(0) {
+
+    };
+    
     pair_init(&vocal_sys_s);
     mic_dev_init(&vocal_sys_s);
     spk_dev_init(&vocal_sys_s);

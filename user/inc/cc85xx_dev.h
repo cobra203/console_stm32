@@ -8,6 +8,7 @@
 #include <cc85xx_ehif.h>
 #include <vocal_sys.h>
 
+#define NWK_MAX_NUM     4
 typedef enum remote_control_cmd_e
 {
     OUTPUT_VOLUME_INCREMENT = 2,
@@ -32,7 +33,7 @@ typedef struct cc85xx_dev_s
     VOCAL_SYS_S     *vocal_sys;
     uint8_t         nwk_enable;
     uint8_t         nwk_stable;
-    NWK_DEV_INFO_S  nwk_dev[MIC_MAX_NUM];
+    NWK_DEV_INFO_S  nwk_dev[NWK_MAX_NUM];
     CC85XX_EHIF_S   ehif;
     void            (*init)     (struct cc85xx_dev_s *);
 } CC85XX_DEV_S;

@@ -43,7 +43,6 @@ typedef struct button_s
     BTN_INTERVAL_S  interval;
     int             (*is_press)(void *);
     int             (*check_active)(struct button_s *);
-    int             (*process)(struct button_s *);
 } BUTTON_S;
 
 int button_check_active(BUTTON_S *button);

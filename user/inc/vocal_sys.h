@@ -7,8 +7,13 @@
 
 #include <stm32f0xx.h>
 
+#define MIC_DEV_NUM     2
+#define SPK_DEV_NUM     4
+
 struct cc85xx_dev_s;
 struct cc85xx_pair_s;
+struct vocal_record_s;
+struct vocal_led_s;
 
 typedef struct vocal_sys_s
 {
@@ -16,6 +21,8 @@ typedef struct vocal_sys_s
     struct cc85xx_dev_s     *mic_dev;
     struct cc85xx_dev_s     *spk_dev;
     struct cc85xx_pair_s    *pair;
+    struct vocal_record_s   *record;
+    struct vocal_led_s      *led;
 } VOCAL_SYS_S;
 
 #ifdef __cplusplus

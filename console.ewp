@@ -1903,10 +1903,19 @@
       <name>$PROJ_DIR$\user\inc\cc85xx_pair.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\lib\inc\core_cm0.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\user\inc\debug.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\user\inc\stm32_led.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\user\inc\stm32_spi.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\inc\stm32_timer.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\user\inc\stm32f0xx_conf.h</name>
@@ -1918,10 +1927,22 @@
       <name>$PROJ_DIR$\lib\inc\stm32f0xx_gpio.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\lib\inc\stm32f0xx_misc.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\lib\inc\stm32f0xx_rcc.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\lib\inc\stm32f0xx_spi.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\lib\inc\stm32f0xx_tim.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\inc\vocal_led.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\inc\vocal_record.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\user\inc\vocal_sys.h</name>
@@ -1951,7 +1972,13 @@
       <name>$PROJ_DIR$\user\src\main.c</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\user\src\stm32_led.c</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\user\src\stm32_spi.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\src\stm32_timer.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\lib\src\stm32f0xx_flash.c</name>
@@ -1963,10 +1990,25 @@
       <name>$PROJ_DIR$\user\src\stm32f0xx_it.c</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\lib\src\stm32f0xx_misc.c</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\lib\src\stm32f0xx_rcc.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\lib\src\stm32f0xx_spi.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\lib\src\stm32f0xx_tim.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\lib\src\system_stm32f0xx.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\src\vocal_led.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\src\vocal_record.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\user\src\vocal_sys.c</name>

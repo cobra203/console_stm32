@@ -29,6 +29,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_it.h"
+#include <debug.h>
+#include <stm32_timer.h>
 
 /** @addtogroup Template_Project
   * @{
@@ -92,6 +94,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+    DEBUG("ss\n");
 }
 
 /******************************************************************************/
@@ -114,5 +117,10 @@ void SysTick_Handler(void)
   * @}
   */ 
 
+void TIM2_IRQHandler(void)
+{
+    DEBUG("IT:TIM2\n");
+    timer_itc();
+}
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

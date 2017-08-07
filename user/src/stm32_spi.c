@@ -55,6 +55,7 @@ void spi_init(SPI_S *spi, SPI_TypeDef *spi_id)
         GPIO_Init(GPIOA, &gpio_struct);
     }
 
+    spi_struct.SPI_Direction           = SPI_Direction_2Lines_FullDuplex;
     spi_struct.SPI_DataSize            = SPI_DataSize_8b;
     spi_struct.SPI_CPOL                = SPI_CPOL_Low;
     spi_struct.SPI_CPHA                = SPI_CPHA_1Edge;
