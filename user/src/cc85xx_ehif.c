@@ -1,12 +1,11 @@
 #include <string.h>
 
-#include <stm32f0xx_spi.h>
-
 #include <cc85xx_ehif.h>
 #include <stm32_spi.h>
 
+
 /* EHIF Cmd Type Defines */
-typedef enum spi_cmd_req_type_e
+typedef enum ehif_cmd_req_type_e
 {
     CMD_NONE                  = 0x00,
     CMD_DI_GET_CHIP_INFO      = 0x1F,
@@ -42,7 +41,7 @@ typedef enum spi_cmd_req_type_e
 
     CMD_RC_SET_DATA           = 0x2D,
     CMD_RC_GET_DATA           = 0x2E,
-} SPI_CMD_REQ_TYPE_E;
+} EHIF_CMD_REQ_TYPE_E;
 
 typedef enum ehif_magic_num_e {
     EHIF_MAGIC_CMD_REQ      = 0x3,      /* 0b11 */
@@ -64,6 +63,20 @@ typedef struct spi_head_READ_WRITE_s
     uint16_t    data_len            :12;
     uint16_t    magic_num           :4;
 } SPI_HEAD_READ_WRITE_S;
+
+typedef struct ehif_rc_get_head_s
+{
+    uint8_t     cmd_count   :3;
+    uint8_t     keyb_count  :3;
+    uint8_t     ext_sel     :2;
+} EHIF_RC_GET_HEAD_S;
+
+typedef struct ehif_rc_get_data_s
+{
+    EHIF_RC_GET_HEAD_S  head;
+    uint8_t             data[12];
+} EHIF_RC_GET_DATA_S;
+
 
 #define EHIF_HEAD_SIZE  sizeof(SPI_HEAD_CMD_REQ_S)
 
@@ -98,29 +111,29 @@ static void _basic_operation(CC85XX_EHIF_S *ehif, EHIF_MAGIC_NAM_E magic,
     phead = (magic == EHIF_MAGIC_CMD_REQ) ? (void *)&cmd_head : (void *)&rw_head;
 
     /* Start Communicate */
-    gs_cc85xx_spi[ehif->spi_dev].set_enable(&gs_cc85xx_spi[ehif->spi_dev], ENABLE);
+    gs_cc85xx_spi[ehif->dev_id].set_enable(&gs_cc85xx_spi[ehif->dev_id], ENABLE);
 
-    gs_cc85xx_spi[ehif->spi_dev].transfer(&gs_cc85xx_spi[ehif->spi_dev],
+    gs_cc85xx_spi[ehif->dev_id].transfer(&gs_cc85xx_spi[ehif->dev_id],
                                         phead, EHIF_HEAD_SIZE, status, sizeof(EHIF_STATUS_S));
 
     switch(magic) {
     case EHIF_MAGIC_CMD_REQ:
     case EHIF_MAGIC_WRITE:
         if(*len) {
-            gs_cc85xx_spi[ehif->spi_dev].transfer(&gs_cc85xx_spi[ehif->spi_dev], data, *len, NULL, 0);
+            gs_cc85xx_spi[ehif->dev_id].transfer(&gs_cc85xx_spi[ehif->dev_id], data, *len, NULL, 0);
         }
         break;
     case EHIF_MAGIC_READBC:
-        gs_cc85xx_spi[ehif->spi_dev].transfer(&gs_cc85xx_spi[ehif->spi_dev], NULL, 0, len, 2);
+        gs_cc85xx_spi[ehif->dev_id].transfer(&gs_cc85xx_spi[ehif->dev_id], NULL, 0, len, 2);
     case EHIF_MAGIC_READ:
         if(*len) {
-            gs_cc85xx_spi[ehif->spi_dev].transfer(&gs_cc85xx_spi[ehif->spi_dev], NULL, 0, data, *len);
+            gs_cc85xx_spi[ehif->dev_id].transfer(&gs_cc85xx_spi[ehif->dev_id], NULL, 0, data, *len);
         }
         break;
     }
 
     /* End Communicate */
-    gs_cc85xx_spi[ehif->spi_dev].set_enable(&gs_cc85xx_spi[ehif->spi_dev], DISABLE);
+    gs_cc85xx_spi[ehif->dev_id].set_enable(&gs_cc85xx_spi[ehif->dev_id], DISABLE);
 
 #if defined(DUMP_ENABLE)
     switch(cmd) {
@@ -221,18 +234,28 @@ static void ehif_VC_GET_VOLUME(CC85XX_EHIF_S *ehif, EHIF_GET_VOLUME_S *get_volum
     _basic_READ(ehif, sizeof(uint16_t), volume, &ehif->status);
 }
 
-
-void ehif_init(CC85XX_EHIF_S *ehif, CC85XX_DEV_TYPE_E spi_dev)
+static void ehif_RC_GET_DATA(CC85XX_EHIF_S *ehif, uint8_t slot, uint8_t *data, uint8_t *count)
 {
-    ehif->spi_dev = spi_dev;
+    EHIF_RC_GET_DATA_S get_data = {0};
 
-    gs_cc85xx_spi[ehif->spi_dev].dev        = ehif->spi_dev;
-    gs_cc85xx_spi[ehif->spi_dev].cs_pin     = (spi_dev == DEV_TYPE_MIC) ? GPIO_Pin_14 : GPIO_Pin_15;
-    gs_cc85xx_spi[ehif->spi_dev].init       = spi_init;
-    gs_cc85xx_spi[ehif->spi_dev].set_enable = cc85xx_spi_set_enable;
-    gs_cc85xx_spi[ehif->spi_dev].transfer   = spi_transfer;
+    _basic_CMD_REQ(ehif, CMD_RC_GET_DATA, sizeof(slot), &slot, &ehif->status);
+    _basic_READ(ehif, sizeof(EHIF_RC_GET_DATA_S), &get_data, &ehif->status);
 
-    gs_cc85xx_spi[ehif->spi_dev].init(&gs_cc85xx_spi[ehif->spi_dev], SPI2);
+    *count = (get_data.head.cmd_count > 12) ? 12 : get_data.head.cmd_count;
+
+    memcpy(data, get_data.data, *count);
+}
+
+void ehif_init(CC85XX_EHIF_S *ehif, VOCAL_DEV_TYPE_E dev_id)
+{
+    ehif->dev_id = dev_id;
+
+    gs_cc85xx_spi[ehif->dev_id].dev        = ehif->dev_id;
+    gs_cc85xx_spi[ehif->dev_id].cs_pin     = (dev_id == DEV_TYPE_MIC) ? GPIO_Pin_14 : GPIO_Pin_15;
+    gs_cc85xx_spi[ehif->dev_id].init       = spi_init;
+    gs_cc85xx_spi[ehif->dev_id].set_enable = cc85xx_spi_set_enable;
+
+    gs_cc85xx_spi[ehif->dev_id].init(&gs_cc85xx_spi[ehif->dev_id], SPI2);
 
     ehif->get_status            = ehif_GET_STATUS;
     ehif->di_get_device_info    = ehif_DI_GET_DEVICE_INFO;
@@ -242,5 +265,6 @@ void ehif_init(CC85XX_EHIF_S *ehif, CC85XX_DEV_TYPE_E spi_dev)
     ehif->nwm_get_status        = ehif_NWM_GET_STATUS;
     ehif->vc_set_volume         = ehif_VC_SET_VOLUME;
     ehif->vc_get_volume         = ehif_VC_GET_VOLUME;
+    ehif->rc_get_data           = ehif_RC_GET_DATA;
 }
 

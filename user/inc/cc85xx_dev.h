@@ -8,7 +8,6 @@
 #include <cc85xx_ehif.h>
 #include <vocal_sys.h>
 
-#define NWK_MAX_NUM     4
 typedef enum remote_control_cmd_e
 {
     OUTPUT_VOLUME_INCREMENT = 2,
@@ -19,29 +18,48 @@ typedef enum remote_control_cmd_e
 typedef struct nwk_dev_info_s
 {
     uint32_t    device_id;
+    int8_t      volume;
+    uint8_t     mute;
     uint8_t     ach;
     uint8_t     slot;
-    uint8_t     record;
     uint8_t     cmd_rc;
     uint8_t     cmd_pc;
-    uint8_t     mute;
-    int16_t     volume;
 } NWK_DEV_INFO_S;
+
+typedef struct nwk_info_s
+{
+    uint32_t    device_id;
+    uint8_t     ach_used;
+    uint8_t     slot;
+} NWK_INFO_S;
+
+typedef enum rang_of_set_volume_s
+{
+    RANG_SET_ALL_DEV,
+    RANG_SET_RC_ONLY,
+    RANG_SET_PC_ONLY,
+} RANG_OF_SET_VOLUME_S;
 
 typedef struct cc85xx_dev_s
 {
     VOCAL_SYS_S     *vocal_sys;
     uint8_t         nwk_enable;
     uint8_t         nwk_stable;
-    NWK_DEV_INFO_S  nwk_dev[NWK_MAX_NUM];
+    NWK_DEV_INFO_S  nwk_dev[MAX_DEV_NUM];
+    NWK_INFO_S      nwk_info[MAX_DEV_NUM];
     CC85XX_EHIF_S   ehif;
-    void            (*init)     (struct cc85xx_dev_s *);
+    void            (*init)             (struct cc85xx_dev_s *);
+    void            (*nwk_chg_detect)   (struct cc85xx_dev_s *, VOCAL_DEV_TYPE_E);
+    void            (*rc_cmd_detect)    (struct cc85xx_dev_s *);
+    void            (*execute)          (struct cc85xx_dev_s *, VOCAL_DEV_TYPE_E, RANG_OF_SET_VOLUME_S);
 } CC85XX_DEV_S;
 
 //void cc85xx_dev_init(CC85XX_DEV_S *dev);
 
-void mic_dev_init(VOCAL_SYS_S *sys_status);
 void spk_dev_init(VOCAL_SYS_S *sys_status);
+void mic_dev_init(VOCAL_SYS_S *sys_status);
+
+void spk_detect(VOCAL_SYS_S *vocal_sys);
 void mic_detect(VOCAL_SYS_S *sys_status);
 
 

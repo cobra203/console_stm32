@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <vocal_record.h>
 #include <stm32f0xx_flash.h>
 #include <debug.h>
@@ -155,7 +157,7 @@ static void record_volume_flash_print(void)
     }
 }
 
-static void record_dev_id_write(VOCAL_RECORD_S *record)
+static void _record_dev_id_write(VOCAL_RECORD_S *record)
 {
     int         i = 0;
     uint32_t    item_base_addr;
@@ -185,7 +187,7 @@ static void record_dev_id_write(VOCAL_RECORD_S *record)
     }
 }
 
-static void record_volume_write(VOCAL_RECORD_S *record)
+static void _record_volume_write(VOCAL_RECORD_S *record)
 {
     uint32_t    item_base_addr;
     uint16_t    data;
@@ -265,7 +267,7 @@ static void record_dev_id_init(VOCAL_RECORD_S *record)
                 record->vocal_sys->spk_dev->nwk_dev[i - MIC_DEV_NUM].slot       = i - MIC_DEV_NUM;
             }
             
-            record_dev_id_write(record);
+            _record_dev_id_write(record);
             return;
         }
     }
@@ -323,7 +325,7 @@ static void record_volume_init(VOCAL_RECORD_S *record)
             record->spk_vl.volume   = 75;
             record->mic_vl[0].volume   = 1;
             record->mic_vl[1].volume   = 2;
-            record_volume_write(record);
+            _record_volume_write(record);
 
             for(i = 0; i < MIC_DEV_NUM; i++) {
                 record->vocal_sys->mic_dev->nwk_dev[i].mute     = record->mic_vl[i].mute;
@@ -338,6 +340,130 @@ static void record_volume_init(VOCAL_RECORD_S *record)
     }
 }
 
+static int record_add(VOCAL_RECORD_S *record, const uint32_t device_id, const VOCAL_DEV_TYPE_E type,
+                                        RECORD_VOLUME_S *volume, int *idx)
+{
+    int i;
+
+    switch(type) {
+    case DEV_TYPE_SPK:
+        for(i = 0; i < SPK_DEV_NUM; i++) {
+            if(BIT_ISSET(record->active, i)) {
+                continue;
+            }
+            record->spk_id[i].device_id = device_id;
+            memcpy(&record->spk_vl, volume, sizeof(RECORD_VOLUME_S));
+            *idx = i;
+            return STM_SUCCESS;
+        }
+        break;
+    case DEV_TYPE_MIC:
+        for(i = 0; i < MIC_DEV_NUM; i++) {
+            if(BIT_ISSET(record->active, SPK_DEV_NUM + i)) {
+                continue;
+            }
+            record->mic_id[i].device_id = device_id;
+            memcpy(&record->mic_vl[i], volume, sizeof(RECORD_VOLUME_S));
+            *idx = i;
+            return STM_SUCCESS;
+        }
+        break;
+    default:
+        break;
+    }
+
+    return STM_FAILURE;
+}
+
+typedef enum rcd_get_or_set_e
+{
+    RCD_GET = 0,
+    RCD_SET,
+} RCD_GET_OR_SET_E;
+
+static int _record_rcd_get_or_set(VOCAL_RECORD_S *record, RCD_GET_OR_SET_E ctrl, const uint32_t device_id, const VOCAL_DEV_TYPE_E type,
+                                        RECORD_VOLUME_S *volume, int *idx)
+{
+    RECORD_VOLUME_S *dest = 0;
+    RECORD_VOLUME_S *src = 0;
+    RECORD_VOLUME_S *vl_head = (DEV_TYPE_SPK == type) ? &record->spk_vl     : &record->mic_vl[0];
+    RECORD_DEV_ID_S *id_head = (DEV_TYPE_SPK == type) ? &record->spk_id[0]  : &record->mic_id[0];
+    int i, ix;
+    int dev_num = (DEV_TYPE_SPK == type) ? SPK_DEV_NUM : MIC_DEV_NUM;
+    
+    for(i = 0; i < dev_num; i++) {
+        if(device_id == id_head[i].device_id) {
+            ix      = (DEV_TYPE_SPK == type) ? 0 : i;
+            dest    = ctrl ? &vl_head[ix] : volume;
+            src     = ctrl ? volume : &vl_head[ix];
+            memcpy(dest, src, sizeof(RECORD_VOLUME_S));
+            *idx = i;
+            BIT_SET(record->active, i + (DEV_TYPE_SPK == type) ? 0 : SPK_DEV_NUM);
+            return STM_SUCCESS;
+        }
+    }
+
+#if 0
+    switch(type) {
+    case DEV_TYPE_SPK:
+        dest    = ctrl ? &record->spk_vl : volume;
+        src     = ctrl ? volume : &record->spk_vl;
+        for(i = 0; i < SPK_DEV_NUM; i++) {
+            if(device_id == record->spk_id[i]) {
+                memcpy(dest, src, sizeof(RECORD_VOLUME_S));
+                *idx = i;
+                BIT_SET(record->active, i);
+                return STM_SUCCESS;
+            }
+        }
+        break;
+    case DEV_TYPE_MIC:
+        for(i = 0; i < MIC_DEV_NUM; i++) {
+            dest    = ctrl ? &record->mic_vl[i] : volume;
+            src     = ctrl ? volume : &record->mic_vl[i];
+            if(device_id == record->mic_id[i]) {
+                memcpy(dest, src, sizeof(RECORD_VOLUME_S));
+                *idx = i;
+                BIT_SET(record->active, SPK_DEV_NUM + i);
+                return STM_SUCCESS;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+#endif
+    return STM_FAILURE;
+}
+
+static int record_get(VOCAL_RECORD_S *record, const uint32_t device_id, const VOCAL_DEV_TYPE_E type,
+                                        RECORD_VOLUME_S *volume, int *idx)
+{
+    return _record_rcd_get_or_set(record, RCD_GET, device_id, type, volume, idx);
+}
+
+static int record_set(VOCAL_RECORD_S *record, const uint32_t device_id, const VOCAL_DEV_TYPE_E type,
+                                    const RECORD_VOLUME_S *volume, int *idx)
+{
+    return _record_rcd_get_or_set(record, RCD_SET, device_id, type, (RECORD_VOLUME_S *)volume, idx);
+}
+
+static int record_commit(VOCAL_RECORD_S *record)
+{
+    if(record->evt.rcd_evt_dev_id_chg) {
+        _record_dev_id_write(record);
+        record->evt.rcd_evt_dev_id_chg = STM_FALSE;
+    }
+
+    if(record->evt.rcd_evt_volume_chg) {
+        _record_volume_write(record);
+        record->evt.rcd_evt_volume_chg = STM_FALSE;
+    }
+
+    return STM_TRUE;
+}
+
+
 void record_init(VOCAL_SYS_S *vocal_sys)
 {
     record.vocal_sys    = vocal_sys;
@@ -349,8 +475,11 @@ void record_init(VOCAL_SYS_S *vocal_sys)
 
     record.dev_id_init  = record_dev_id_init;
     record.volume_init  = record_volume_init;
-    record.dev_id_write = record_dev_id_write;
-    record.volume_write = record_volume_write;
+    record.add          = record_add;
+    record.get          = record_get;
+    record.set          = record_set;
+    record.commit       = record_commit;
+    
 
     vocal_sys->record   = &record;
 
@@ -377,7 +506,3 @@ void record_init(VOCAL_SYS_S *vocal_sys)
     record_info_print(&record);
 }
 
-void write_record(uint32_t device_id, uint16_t volume, uint8_t mute, uint8_t record_id)
-{
-
-}

@@ -32,12 +32,10 @@
 
 #include <debug.h>
 #include <cc85xx_pair.h>
-#include <cc85xx_dev.h>
-#include <vocal_sys.h>
-#include <vocal_record.h>
-#include <stm32_common.h>
+
 #include <stm32_timer.h>
-#include <vocal_led.h>
+#include <vocal_sys.h>
+
 
 /** @addtogroup STM32F0xx_StdPeriph_Templates
   * @{
@@ -103,6 +101,8 @@ static void rcc_config(void)
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
 
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 }
 
 /**
@@ -113,7 +113,7 @@ static void rcc_config(void)
 int main(void)
 {
     //while(1);
-    VOCAL_SYS_S vocal_sys_s;
+    VOCAL_SYS_S vocal_sys;
     
     /*!< At this stage the microcontroller clock setting is already configured, 
        this is done through SystemInit() function which is called from startup
@@ -135,16 +135,8 @@ int main(void)
 
     timer_init();
     
-
-    record_init(&vocal_sys_s);
-    led_init(&vocal_sys_s);
-    while(0) {
-
-    };
+    vocal_init(&vocal_sys);
     
-    pair_init(&vocal_sys_s);
-    mic_dev_init(&vocal_sys_s);
-    spk_dev_init(&vocal_sys_s);
 
     DEBUG("While Start\n");
 static int tmp = 0;
@@ -152,7 +144,7 @@ static int tmp = 0;
     while (1)
     {
         DEBUG("TMP=%d\n", tmp++);
-        pair_detect(&vocal_sys_s);
+        pair_detect(&vocal_sys);
     }
 }
 

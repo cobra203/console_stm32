@@ -1909,6 +1909,12 @@
       <name>$PROJ_DIR$\user\inc\debug.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\user\inc\mcp2210_dev.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\inc\mcp2210_uaif.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\user\inc\stm32_led.h</name>
     </file>
     <file>
@@ -1919,6 +1925,9 @@
     </file>
     <file>
       <name>$PROJ_DIR$\user\inc\stm32f0xx_conf.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\lib\inc\stm32f0xx_exti.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\lib\inc\stm32f0xx_flash.h</name>
@@ -1936,7 +1945,13 @@
       <name>$PROJ_DIR$\lib\inc\stm32f0xx_spi.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\lib\inc\stm32f0xx_syscfg.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\lib\inc\stm32f0xx_tim.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\inc\vocal_common.h</name>
     </file>
     <file>
       <name>$PROJ_DIR$\user\inc\vocal_led.h</name>
@@ -1972,6 +1987,12 @@
       <name>$PROJ_DIR$\user\src\main.c</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\user\src\mcp2210_dev.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\user\src\mcp2210_uaif.c</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\user\src\stm32_led.c</name>
     </file>
     <file>
@@ -1979,6 +2000,9 @@
     </file>
     <file>
       <name>$PROJ_DIR$\user\src\stm32_timer.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\lib\src\stm32f0xx_exti.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\lib\src\stm32f0xx_flash.c</name>
@@ -1997,6 +2021,9 @@
     </file>
     <file>
       <name>$PROJ_DIR$\lib\src\stm32f0xx_spi.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\lib\src\stm32f0xx_syscfg.c</name>
     </file>
     <file>
       <name>$PROJ_DIR$\lib\src\stm32f0xx_tim.c</name>

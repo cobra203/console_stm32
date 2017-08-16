@@ -6,9 +6,7 @@
 #endif
 
 #include <stm32f0xx.h>
-
-#define MIC_MAX_NUM 4
-#define SPK_MAX_NUM 1
+#include <vocal_common.h>
 
 /* EHIF Status Word Define */
 typedef struct ehif_status_word_s
@@ -55,21 +53,15 @@ typedef struct ehif_get_volume_s
 typedef struct ehif_nwm_get_status_s
 {
     uint8_t     byte0_to_4[5];
-    uint8_t     dev_data[16 * MIC_MAX_NUM];
+    uint8_t     dev_data[16 * MAX_DEV_NUM];
 } EHIF_NWM_GET_STATUS_S;
-
-typedef enum cc85xx_dev_type_e
-{
-    DEV_TYPE_MIC = 0,
-    DEV_TYPE_SPK,  
-} CC85XX_DEV_TYPE_E;
 
 typedef struct cc85xx_ehif_s
 {
-    CC85XX_DEV_TYPE_E   spi_dev;
+    VOCAL_DEV_TYPE_E    dev_id;
     EHIF_STATUS_S       status;
     
-    void    (*init)                 (struct cc85xx_ehif_s *, CC85XX_DEV_TYPE_E);
+    void    (*init)                 (struct cc85xx_ehif_s *, VOCAL_DEV_TYPE_E);
     void    (*get_status)           (struct cc85xx_ehif_s *);
     void    (*di_get_device_info)   (struct cc85xx_ehif_s *, EHIF_DEV_INFO_S *);
     void    (*ehc_evt_clr)          (struct cc85xx_ehif_s *, uint8_t);
@@ -78,9 +70,10 @@ typedef struct cc85xx_ehif_s
     void    (*nwm_get_status)       (struct cc85xx_ehif_s *, EHIF_NWM_GET_STATUS_S *);
     void    (*vc_set_volume)        (struct cc85xx_ehif_s *, EHIF_SET_VOLUME_S *);
     void    (*vc_get_volume)        (struct cc85xx_ehif_s *, EHIF_GET_VOLUME_S *, uint16_t *);
+    void    (*rc_get_data)          (struct cc85xx_ehif_s *, uint8_t, uint8_t *, uint8_t *);
 } CC85XX_EHIF_S;
 
-void ehif_init(CC85XX_EHIF_S *ehif, CC85XX_DEV_TYPE_E spi_dev);
+void ehif_init(CC85XX_EHIF_S *ehif, VOCAL_DEV_TYPE_E dev_id);
 
 #ifdef __cplusplus
 }

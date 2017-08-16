@@ -29,8 +29,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_it.h"
+#include <stm32f0xx_exti.h>
 #include <debug.h>
 #include <stm32_timer.h>
+#include <stm32_spi.h>
 
 /** @addtogroup Template_Project
   * @{
@@ -121,6 +123,14 @@ void TIM2_IRQHandler(void)
 {
     DEBUG("IT:TIM2\n");
     timer_itc();
+}
+
+void EXTI4_15_IRQHandler(void)
+{
+    DEBUG("4_15_IRQHandler\n");
+    if(EXTI_GetITStatus(EXTI_Line4) != RESET) {
+        spi_itc();
+    }
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

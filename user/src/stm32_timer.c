@@ -1,5 +1,5 @@
 #include <stm32_timer.h>
-#include <stm32_common.h>
+#include <vocal_common.h>
 
 static TIMER_OBJ_S basic_timer;
 
@@ -72,7 +72,7 @@ void timer_init(void) /* 1ms timer */
 
     TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 
-    nvic_cfg.NVIC_IRQChannelPriority    = 3;
+    nvic_cfg.NVIC_IRQChannelPriority    = 2;
     nvic_cfg.NVIC_IRQChannel            = TIM2_IRQn;
     nvic_cfg.NVIC_IRQChannelCmd         = ENABLE;
     NVIC_Init(&nvic_cfg);
@@ -107,6 +107,18 @@ void timer_touch_process(void)
             }
         }
     }
+}
+
+void delay_ms(uint32_t time)   
+{
+    uint8_t timer;
+    
+    while(timer_alloc(&timer));
+    basic_timer.delay_count[timer] = time;
+
+    while(basic_timer.delay_count[timer]);
+
+    timer_free(timer);
 }
 
 void timer_task(TIMER_TYPE_E type, uint32_t delay, uint32_t load, TASK_F task, void *args)
