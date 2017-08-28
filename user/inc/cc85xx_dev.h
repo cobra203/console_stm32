@@ -52,6 +52,7 @@ typedef struct cc85xx_dev_s
     void            (*nwk_chg_detect)   (struct cc85xx_dev_s *, VOCAL_DEV_TYPE_E);
     void            (*rc_cmd_detect)    (struct cc85xx_dev_s *);
     void            (*execute)          (struct cc85xx_dev_s *, VOCAL_DEV_TYPE_E, RANG_OF_SET_VOLUME_S);
+    void            (*nwk_pairing)      (struct cc85xx_dev_s *, uint32_t);
 } CC85XX_DEV_S;
 
 //void cc85xx_dev_init(CC85XX_DEV_S *dev);

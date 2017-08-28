@@ -251,7 +251,7 @@ void ehif_init(CC85XX_EHIF_S *ehif, VOCAL_DEV_TYPE_E dev_id)
     ehif->dev_id = dev_id;
 
     gs_cc85xx_spi[ehif->dev_id].dev        = ehif->dev_id;
-    gs_cc85xx_spi[ehif->dev_id].cs_pin     = (dev_id == DEV_TYPE_MIC) ? GPIO_Pin_14 : GPIO_Pin_15;
+    gs_cc85xx_spi[ehif->dev_id].cs_pin     = (dev_id == DEV_TYPE_SPK) ? GPIO_Pin_15 : GPIO_Pin_14;
     gs_cc85xx_spi[ehif->dev_id].init       = spi_init;
     gs_cc85xx_spi[ehif->dev_id].set_enable = cc85xx_spi_set_enable;
 

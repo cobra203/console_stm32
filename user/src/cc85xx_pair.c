@@ -15,10 +15,13 @@ typedef enum btn_type_e
 
 static void _pairing_process(CC85XX_PAIR_S *pair)
 {
+    VOCAL_SYS_S *vocal_sys = pair->vocal_sys;
+    
     int i;
     for(i = 0; i < sizeof(pair->btn_pair)/sizeof(BUTTON_S); i++) {
         if(pair->btn_pair[i].state.avtice) {
             pair->btn_pair[i].state.avtice = 0;
+            vocal_sys->sys_evt.req_pairing = STM_TRUE;
             DEBUG("[%d]:pairing\n", pair->btn_pair[i].type);
         }
     }
@@ -36,12 +39,12 @@ void pair_init(VOCAL_SYS_S *sys_status)
     init_struct.GPIO_Speed  = GPIO_Speed_Level_2;
     init_struct.GPIO_Pin    = GPIO_Pin_8 | GPIO_Pin_2;
     GPIO_Init(GPIOA, &init_struct);
-
+#if 0
     init_struct.GPIO_Mode   = GPIO_Mode_OUT;
     init_struct.GPIO_Speed  = GPIO_Speed_Level_2;
     init_struct.GPIO_Pin    = GPIO_Pin_8 | GPIO_Pin_2;
     GPIO_Init(GPIOB, &init_struct);
-
+#endif
     for(i = 0; i < sizeof(cc85xx_pair.btn_pair)/sizeof(BUTTON_S); i++) {
         cc85xx_pair.btn_pair[i].check_active      = button_check_active;
         cc85xx_pair.btn_pair[i].type              = i;

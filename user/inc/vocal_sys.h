@@ -16,10 +16,8 @@ struct vocal_led_s;
 
 typedef struct sys_evt_s
 {
-    uint8_t evt_mic_chg         :1;
-    uint8_t evt_spk_chg         :1;
-    uint8_t evt_mcp_chg         :1;
-    uint8_t                     :1;
+    uint8_t req_pairing         :1;
+    uint8_t                     :3;
     uint8_t req_sync_spk_nwk    :1;
     uint8_t req_sync_mic_nwk    :1;
     uint8_t req_sync_rc_cmd     :1;
@@ -38,9 +36,11 @@ typedef struct vocal_sys_s
     void                    (*sync_nwk_dev)     (struct vocal_sys_s *, VOCAL_DEV_TYPE_E);
     void                    (*sync_rc_cmd)      (struct vocal_sys_s *);
     void                    (*sync_pc_cmd)      (struct vocal_sys_s *);
+    void                    (*nwk_pairing)      (struct vocal_sys_s *);
 } VOCAL_SYS_S;
 
 void vocal_init(VOCAL_SYS_S *vocal);
+void vocal_working(VOCAL_SYS_S *vocal);
 
 
 #ifdef __cplusplus

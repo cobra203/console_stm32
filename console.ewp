@@ -70,16 +70,16 @@
         <option>
           <name>GRuntimeLibSelect</name>
           <version>0</version>
-          <state>1</state>
+          <state>2</state>
         </option>
         <option>
           <name>GRuntimeLibSelectSlave</name>
           <version>0</version>
-          <state>1</state>
+          <state>2</state>
         </option>
         <option>
           <name>RTDescription</name>
-          <state>Use the normal configuration of the C/C++ runtime library. No locale interface, C locale, no file descriptor support, no multibytes in printf and scanf, and no hex floats in strtod.</state>
+          <state>Use the full configuration of the C/C++ runtime library. Full locale interface, C locale, file descriptor support, multibytes in printf and scanf, and hex floats in strtod.</state>
         </option>
         <option>
           <name>OGProductVersion</name>
@@ -133,7 +133,7 @@
         </option>
         <option>
           <name>RTConfigPath2</name>
-          <state>$TOOLKIT_DIR$\INC\c\DLib_Config_Normal.h</state>
+          <state>$TOOLKIT_DIR$\INC\c\DLib_Config_Full.h</state>
         </option>
         <option>
           <name>GFPUCoreSlave</name>
@@ -298,8 +298,9 @@
         </option>
         <option>
           <name>CCIncludePath2</name>
-          <state>$PROJ_DIR$\lib\inc</state>
-          <state>$PROJ_DIR$\user\inc</state>
+          <state>$PROJ_DIR$\FWlib\inc</state>
+          <state>$PROJ_DIR$\CMSIS</state>
+          <state>$PROJ_DIR$\USER\inc</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -591,7 +592,7 @@
         </option>
         <option>
           <name>OCOutputOverride</name>
-          <state>1</state>
+          <state>0</state>
         </option>
         <option>
           <name>OOCOutputFile</name>
@@ -686,7 +687,7 @@
         </option>
         <option>
           <name>IlinkMapFile</name>
-          <state>0</state>
+          <state>1</state>
         </option>
         <option>
           <name>IlinkLogFile</name>
@@ -1889,156 +1890,180 @@
     </settings>
   </configuration>
   <group>
-    <name>lib</name>
+    <name>CMSIS</name>
     <file>
-      <name>$PROJ_DIR$\user\inc\button.h</name>
+      <name>$PROJ_DIR$\CMSIS\core_cm0.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\inc\cc85xx_dev.h</name>
+      <name>$PROJ_DIR$\CMSIS\core_cmFunc.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\inc\cc85xx_ehif.h</name>
+      <name>$PROJ_DIR$\CMSIS\core_cmInstr.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\inc\cc85xx_pair.h</name>
+      <name>$PROJ_DIR$\CMSIS\startup\cstartup_M.s</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\inc\core_cm0.h</name>
+      <name>$PROJ_DIR$\CMSIS\system_stm32f0xx.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\inc\debug.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\mcp2210_dev.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\mcp2210_uaif.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\stm32_led.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\stm32_spi.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\stm32_timer.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\stm32f0xx_conf.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_exti.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_flash.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_gpio.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_misc.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_rcc.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_spi.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_syscfg.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\lib\inc\stm32f0xx_tim.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\vocal_common.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\vocal_led.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\vocal_record.h</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\user\inc\vocal_sys.h</name>
+      <name>$PROJ_DIR$\CMSIS\startup\vector_table_M.s</name>
     </file>
   </group>
   <group>
-    <name>Output</name>
+    <name>FWlib</name>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\flash_config.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_exti.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_exti.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_flash.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_flash.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_gpio.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_gpio.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_misc.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_misc.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_rcc.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_rcc.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_spi.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_spi.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_syscfg.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_syscfg.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\src\stm32f0xx_tim.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\stm32f0xx_tim.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\FWlib\inc\system_stm32f0xx.h</name>
+    </file>
   </group>
   <group>
-    <name>src</name>
+    <name>USER</name>
     <file>
-      <name>$PROJ_DIR$\user\src\button.c</name>
+      <name>$PROJ_DIR$\USER\src\button.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\cc85xx_dev.c</name>
+      <name>$PROJ_DIR$\USER\inc\button.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\cc85xx_ehif.c</name>
+      <name>$PROJ_DIR$\USER\src\cc85xx_dev.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\cc85xx_pair.c</name>
+      <name>$PROJ_DIR$\USER\inc\cc85xx_dev.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\debug.c</name>
+      <name>$PROJ_DIR$\USER\src\cc85xx_ehif.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\main.c</name>
+      <name>$PROJ_DIR$\USER\inc\cc85xx_ehif.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\mcp2210_dev.c</name>
+      <name>$PROJ_DIR$\USER\src\cc85xx_pair.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\mcp2210_uaif.c</name>
+      <name>$PROJ_DIR$\USER\inc\cc85xx_pair.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\stm32_led.c</name>
+      <name>$PROJ_DIR$\USER\src\debug.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\stm32_spi.c</name>
+      <name>$PROJ_DIR$\USER\inc\debug.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\stm32_timer.c</name>
+      <name>$PROJ_DIR$\USER\src\main.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_exti.c</name>
+      <name>$PROJ_DIR$\USER\src\mcp2210_dev.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_flash.c</name>
+      <name>$PROJ_DIR$\USER\inc\mcp2210_dev.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_gpio.c</name>
+      <name>$PROJ_DIR$\USER\src\mcp2210_uaif.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\stm32f0xx_it.c</name>
+      <name>$PROJ_DIR$\USER\inc\mcp2210_uaif.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_misc.c</name>
+      <name>$PROJ_DIR$\USER\src\stm32_led.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_rcc.c</name>
+      <name>$PROJ_DIR$\USER\inc\stm32_led.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_spi.c</name>
+      <name>$PROJ_DIR$\USER\src\stm32_spi.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_syscfg.c</name>
+      <name>$PROJ_DIR$\USER\inc\stm32_spi.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\stm32f0xx_tim.c</name>
+      <name>$PROJ_DIR$\USER\src\stm32_timer.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\lib\src\system_stm32f0xx.c</name>
+      <name>$PROJ_DIR$\USER\inc\stm32_timer.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\vocal_led.c</name>
+      <name>$PROJ_DIR$\USER\inc\stm32f0xx_conf.h</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\vocal_record.c</name>
+      <name>$PROJ_DIR$\USER\src\stm32f0xx_it.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\user\src\vocal_sys.c</name>
+      <name>$PROJ_DIR$\USER\inc\stm32f0xx_it.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\USER\inc\vocal_common.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\USER\src\vocal_led.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\USER\inc\vocal_led.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\USER\src\vocal_record.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\USER\inc\vocal_record.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\USER\src\vocal_sys.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\USER\inc\vocal_sys.h</name>
     </file>
   </group>
 </project>

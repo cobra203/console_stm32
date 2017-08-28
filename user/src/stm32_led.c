@@ -1,30 +1,29 @@
 #include <stm32_led.h>
 #include <stm32_timer.h>
 #include <stm32f0xx.h>
+#include <debug.h>
 
 #define TASK_BUTT   (sizeof(uint16_t) * 2)
-static void _led_id_transform(uint8_t id, uint16_t *pin)
+
+static uint8_t table_id_to_pin[SPK_DEV_NUM + MIC_DEV_NUM] = {6, 7, 0, 1, 9, 12};
+
+static void _led_id_transform(uint8_t id, uint16_t *pin, GPIO_TypeDef **port)
 {
-    if(id < 4) {
-        *pin = 0x1 << (10 + id);
-    }
-    else if(id < 6) {
-        *pin = 0x1 << (id - 4);
-    }
-    else {
-        *pin = 0x1 << id;
-    } 
+    uint8_t pin_sit = table_id_to_pin[id];
+    
+    *pin = 0x1 << pin_sit;
+    *port = (pin_sit == 6 || pin_sit == 7) ? GPIOB : GPIOA;
 }
 
 static void _led_bright(STM32_LED_S *led)
 {
-    GPIO_SetBits(led->port, led->pin);
+    GPIO_ResetBits(led->port, led->pin);
     led->status = 1;
 }
 
 static void _led_dark(STM32_LED_S *led)
 {
-    GPIO_ResetBits(led->port, led->pin);
+    GPIO_SetBits(led->port, led->pin);
     led->status = 0;
 }
 
@@ -51,7 +50,7 @@ static void _led_callback_func(void *args)
 static void _led_doing(STM32_LED_S *led)
 {
     if(led->task < TASK_BUTT) {
-        timer_free(led->task);
+        timer_free(&led->task);
         led->dark(led);
     }
 
@@ -62,8 +61,7 @@ static void _led_doing(STM32_LED_S *led)
         led->bright(led);
     }
     else {
-        while(timer_alloc(&led->task));
-        timer_task(TMR_CYCLICITY, led->interval[0], led->interval[1], _led_callback_func, (void *)led);
+        timer_task(&led->task, TMR_CYCLICITY, led->interval[0], led->interval[1], _led_callback_func, (void *)led);
     }
 }
 
@@ -71,14 +69,15 @@ void stm32_led_init(STM32_LED_S *led, uint16_t id)
 {
     GPIO_InitTypeDef    gpio_struct;
 
-    _led_id_transform(id, &led->pin);
-    led->port = (id < 6) ? GPIOA : GPIOB;
-    
+    _led_id_transform(id, &led->pin, &led->port);
+
     gpio_struct.GPIO_Speed  = GPIO_Speed_Level_3;
     gpio_struct.GPIO_Mode   = GPIO_Mode_OUT;
-    gpio_struct.GPIO_OType  = GPIO_OType_PP;
+    gpio_struct.GPIO_PuPd   = GPIO_PuPd_UP;
+    gpio_struct.GPIO_OType  = GPIO_OType_OD;
     gpio_struct.GPIO_Pin    = led->pin;
     GPIO_Init(led->port, &gpio_struct);
+    
 
     led->set    = _led_set_attr;
     led->doing  = _led_doing;

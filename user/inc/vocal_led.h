@@ -16,19 +16,12 @@ typedef enum led_status_e
     LED_STATUS_PAIRING,
 } LED_STATUS_E;
 
-typedef enum led_type_e
-{
-    LED_SPK,
-    LED_MIC,
-} LED_TYPE_E;
-
 typedef struct vocal_led_s
 {
     VOCAL_SYS_S     *vocal_sys;
     STM32_LED_S     mic_led[MIC_DEV_NUM];
     STM32_LED_S     spk_led[SPK_DEV_NUM];
-    void            (*set)      (struct vocal_led_s *, LED_TYPE_E, uint8_t, LED_STATUS_E);
-    void            (*commit)   (struct vocal_led_s *);
+    void            (*set)      (struct vocal_led_s *, VOCAL_DEV_TYPE_E, uint8_t, LED_STATUS_E);
 } VOCAL_LED_S;
 
 void led_init(VOCAL_SYS_S *vocal_sys);

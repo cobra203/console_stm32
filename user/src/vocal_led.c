@@ -1,11 +1,11 @@
 #include <vocal_led.h>
 #include <stm32_led.h>
-
+#include <debug.h>
 static VOCAL_LED_S leds;
 
-static void led_status_set(VOCAL_LED_S *led, LED_TYPE_E type, uint8_t idx, LED_STATUS_E mode)
+static void led_status_set(VOCAL_LED_S *led, VOCAL_DEV_TYPE_E type, uint8_t idx, LED_STATUS_E mode)
 {
-    STM32_LED_S *led_head = (type == LED_MIC) ? &led->mic_led[0] : &led->spk_led[0];
+    STM32_LED_S *led_head = (type == DEV_TYPE_SPK) ? &led->spk_led[0] : &led->mic_led[0];
 
     switch(mode) {
     case LED_STATUS_CLOSED:
@@ -35,11 +35,13 @@ void led_init(VOCAL_SYS_S *vocal_sys)
     for(i = 0; i < SPK_DEV_NUM; i++) {
         leds.spk_led[i].init = stm32_led_init;
         leds.spk_led[i].init(&leds.spk_led[i], i);
+        leds.set(&leds, DEV_TYPE_SPK, i, LED_STATUS_CONNECT);
     }
     
     for(i = 0; i < MIC_DEV_NUM; i++) {
         leds.mic_led[i].init = stm32_led_init;
         leds.mic_led[i].init(&leds.mic_led[i], i + SPK_DEV_NUM);
+        leds.set(&leds, DEV_TYPE_MIC, i, LED_STATUS_CONNECT);
     }
 }
 

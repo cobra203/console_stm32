@@ -1,4 +1,5 @@
 #include <button.h>
+#include <vocal_common.h>
 
 /**********************************************************************************/
 /* Button Interface Functions                                                     */

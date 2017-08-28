@@ -53,11 +53,16 @@ static void rcc_config(void)
     RCC_DeInit();
 
     /* HSE = 24M */
+#if 0
+
     RCC_HSEConfig(RCC_HSE_ON);
-#if 1
+
     BIT_SET(RCC->CR, RCC_FLAG_HSERDY);
+#endif
+
     BIT_SET(RCC->CR, RCC_FLAG_HSIRDY);
-#endif    
+
+#if 0
     if(RCC_WaitForHSEStartUp() != ERROR) { 
         /* PLL = HSE * RCC_PLLSource_PREDIV1 * 2 = 48M */
         RCC_PREDIV1Config(RCC_PREDIV1_Div1);
@@ -65,7 +70,8 @@ static void rcc_config(void)
         RCC_PLLCmd(ENABLE);
     }
     else {
-        DEBUG("HSE Start Up Fail, Use HSI\n");
+#endif        
+        //DEBUG("HSE Start Up Fail, Use HSI\n");
         RCC_HSEConfig(RCC_HSE_OFF);
         /* HSI = 8M */
         RCC_HSICmd(ENABLE);
@@ -73,10 +79,12 @@ static void rcc_config(void)
         /* PLL = (HSI/2) * 12 = 48M */
         RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_12);
         RCC_PLLCmd(ENABLE);
+#if 0
     }
-#if 1
-    BIT_SET(RCC->CR, RCC_FLAG_PLLRDY);
 #endif
+
+    BIT_SET(RCC->CR, RCC_FLAG_PLLRDY);
+
     while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
 
     /* SYSCLK = PLLCLK = 48M */
@@ -92,17 +100,15 @@ static void rcc_config(void)
     RCC_PCLKConfig(RCC_HCLK_Div1);
 
     /* Set Flash Latency */
-    FLASH_PrefetchBufferCmd(ENABLE);
-    FLASH_SetLatency(FLASH_Latency_1);
+    //FLASH_PrefetchBufferCmd(ENABLE);
+    //FLASH_SetLatency(FLASH_Latency_1);
 
-    SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
+    //SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
     
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
 
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+    //RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 }
 
 /**
@@ -113,6 +119,7 @@ static void rcc_config(void)
 int main(void)
 {
     //while(1);
+    
     VOCAL_SYS_S vocal_sys;
     
     /*!< At this stage the microcontroller clock setting is already configured, 
@@ -127,14 +134,15 @@ int main(void)
 #if 1
     rcc_config();
 #endif
-
-    if (SysTick_Config(SystemCoreClock / 1000)) { 
+#if 0
+    if(SysTick_Config(SystemCoreClock / 1000)) { 
         /* Capture error */ 
         while (1);
     }
-
+#endif
+    //while(1);
     timer_init();
-    
+    //while(1);
     vocal_init(&vocal_sys);
     
 
@@ -144,7 +152,7 @@ static int tmp = 0;
     while (1)
     {
         DEBUG("TMP=%d\n", tmp++);
-        pair_detect(&vocal_sys);
+        vocal_working(&vocal_sys);
     }
 }
 

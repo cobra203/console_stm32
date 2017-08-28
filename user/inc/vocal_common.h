@@ -52,8 +52,8 @@ inline static int _check_endian(void) /* big reture true */
 
 typedef enum vocal_dev_type_e
 {
-    DEV_TYPE_MIC = 0,
-    DEV_TYPE_SPK,  
+    DEV_TYPE_SPK = 0,  
+    DEV_TYPE_MIC,
 } VOCAL_DEV_TYPE_E;
 
 typedef struct record_volume_s

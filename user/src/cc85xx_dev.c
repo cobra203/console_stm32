@@ -61,18 +61,19 @@ static void _dev_set_volume_alone(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, int 
     set_volume.volume       = 0xfe70 + _volume_to_db(dev->nwk_dev[idx].volume);
 
     switch(type) {
+    case DEV_TYPE_SPK:
+        if(dev->nwk_dev[idx].mute || dev->nwk_dev[idx].volume == 0) {
+            set_volume.volume       = 0xfc00;
+        }
+  
+        break;
+        
     case DEV_TYPE_MIC:
         if(dev->nwk_dev[idx].mute || dev->nwk_dev[idx].volume == 0) {
             set_volume.set_op       = 3;
             set_volume.log_channel  = dev->nwk_dev[idx].ach;
             set_volume.volume       = 0xfc00;
         }
-        break;
-    case DEV_TYPE_SPK:
-        if(dev->nwk_dev[idx].mute || dev->nwk_dev[idx].volume == 0) {
-            set_volume.volume       = 0xfc00;
-        }
-  
         break;
     default:
         return;
@@ -85,7 +86,7 @@ static void _dev_set_volume(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, RANG_OF_SE
 {
     int     i = 0;
     int     pass;
-    uint8_t dev_num = (DEV_TYPE_MIC == type) ? MIC_DEV_NUM : SPK_DEV_NUM;
+    uint8_t dev_num = (DEV_TYPE_SPK == type) ? SPK_DEV_NUM : MIC_DEV_NUM;
 
     for(i = 0; i < dev_num; i++) {
         if(dev->nwk_dev[i].device_id) {
@@ -110,6 +111,20 @@ static void _dev_set_volume(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, RANG_OF_SE
             }
         }
     }
+}
+
+static void _dev_nwk_pairing_callback(void *args)
+{
+    CC85XX_DEV_S *dev = (CC85XX_DEV_S *)args;
+    
+    dev->ehif.nwm_control_signal(&dev->ehif, STM_DISABLE);
+}
+static void dev_nwk_pairing(CC85XX_DEV_S *dev, uint32_t time)
+{
+    uint8_t timer;
+    
+    dev->ehif.nwm_control_signal(&dev->ehif, STM_ENABLE);
+    timer_task(&timer, TMR_ONCE, time, NULL, _dev_nwk_pairing_callback, dev);
 }
 
 static void dev_nwk_chg_detect(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type)
@@ -191,31 +206,19 @@ static void dev_rc_cmd_detect(CC85XX_DEV_S *dev)
 static void dev_execute(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, RANG_OF_SET_VOLUME_S rang)
 {    
     switch(type) {
+    case DEV_TYPE_SPK:
+        dev->nwk_stable = STM_TRUE;
+        _dev_set_volume(dev, type, rang);
+        break;
+        
     case DEV_TYPE_MIC:
         dev->nwk_stable = STM_TRUE;
         _dev_set_volume(dev, type, rang);
         break;
-    case DEV_TYPE_SPK:
-        dev->nwk_stable = STM_TRUE;
-        _dev_set_volume(dev, type, rang);
+    
     default:
         break;
     }
-}
-
-
-void mic_dev_init(VOCAL_SYS_S *vocal_sys)
-{
-    mic_dev.vocal_sys       = vocal_sys;
-    mic_dev.ehif.init       = ehif_init;
-    
-    mic_dev.ehif.init(&mic_dev.ehif, DEV_TYPE_MIC);
-
-    mic_dev.nwk_chg_detect  = dev_nwk_chg_detect;
-    mic_dev.rc_cmd_detect   = dev_rc_cmd_detect;
-    mic_dev.execute         = dev_execute;
-
-    vocal_sys->mic_dev      = &mic_dev;
 }
 
 void spk_dev_init(VOCAL_SYS_S *vocal_sys)
@@ -227,13 +230,43 @@ void spk_dev_init(VOCAL_SYS_S *vocal_sys)
 
     spk_dev.nwk_chg_detect  = dev_nwk_chg_detect;
     spk_dev.execute         = dev_execute;
+    spk_dev.nwk_pairing     = dev_nwk_pairing;
 
     vocal_sys->spk_dev      = &spk_dev;
 }
 
+void mic_dev_init(VOCAL_SYS_S *vocal_sys)
+{
+    mic_dev.vocal_sys       = vocal_sys;
+    mic_dev.ehif.init       = ehif_init;
+    
+    mic_dev.ehif.init(&mic_dev.ehif, DEV_TYPE_MIC);
+
+    mic_dev.nwk_chg_detect  = dev_nwk_chg_detect;
+    mic_dev.rc_cmd_detect   = dev_rc_cmd_detect;
+    mic_dev.execute         = dev_execute;
+    mic_dev.nwk_pairing     = dev_nwk_pairing;
+
+    vocal_sys->mic_dev      = &mic_dev;
+}
+
 void spk_detect(VOCAL_SYS_S *vocal_sys)
 {
+    if(!spk_dev.ehif.status.cmdreq_rdy || spk_dev.ehif.status.pwr_state > 5) {
+        spk_dev.ehif.get_status(&spk_dev.ehif);
+        return;
+    }
 
+    if(!spk_dev.nwk_enable) {
+        spk_dev.ehif.nwm_control_enable(&spk_dev.ehif, STM_DISABLE);
+        delay_ms(10);
+        spk_dev.ehif.nwm_control_enable(&spk_dev.ehif, STM_ENABLE);
+        spk_dev.nwk_enable = STM_TRUE;
+    }
+
+    if(!spk_dev.nwk_stable || spk_dev.ehif.status.evt_nwk_chg) {
+        spk_dev.nwk_chg_detect(&spk_dev, DEV_TYPE_SPK);
+    }
 }
 
 void mic_detect(VOCAL_SYS_S *vocal_sys)

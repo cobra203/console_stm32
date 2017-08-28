@@ -15,26 +15,26 @@ typedef enum timer_type_e
     TMR_CYCLICITY,
 } TIMER_TYPE_E;
 
+#define TIMERS_NUM (sizeof(uint16_t) * 8)
+
 typedef struct timer_obj_s
 {
     uint16_t            active;
     uint16_t            touch;
-    TIMER_TYPE_E        type;
-    uint32_t            delay_reload[sizeof(active) * 8];
-    volatile uint32_t   delay_count[sizeof(active) * 8];
-    TASK_F              callback_func[sizeof(active) * 8];
-    void                *callback_args[sizeof(active) * 8];
+    TIMER_TYPE_E        type[TIMERS_NUM];
+    uint32_t            delay_reload[TIMERS_NUM];
+    volatile uint32_t   delay_count[TIMERS_NUM];
+    TASK_F              callback_func[TIMERS_NUM];
+    void                *callback_args[TIMERS_NUM];
 } TIMER_OBJ_S;
 
 extern TIMER_OBJ_S basic_timer;
 
-int  timer_alloc(uint8_t *timer);
-void timer_free(uint8_t timer);
+void timer_free(uint8_t *timer);
 void timer_set_reload(uint8_t id, uint32_t reload);
 void timer_itc(void);
 void timer_init(void);
-void timer_touch_process(void);
-void timer_task(TIMER_TYPE_E type, uint32_t delay, uint32_t load, TASK_F task, void *args);
+void timer_task(uint8_t *timer, TIMER_TYPE_E type, uint32_t delay, uint32_t load, TASK_F task, void *args);
 void delay_ms(uint32_t time);
 
 #ifdef __cplusplus

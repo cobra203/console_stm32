@@ -121,13 +121,17 @@ void SysTick_Handler(void)
 
 void TIM2_IRQHandler(void)
 {
-    DEBUG("IT:TIM2\n");
-    timer_itc();
+    //DEBUG("IT:TIM2\n");
+    if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
+        TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+        
+        timer_itc();
+    }   
 }
 
 void EXTI4_15_IRQHandler(void)
 {
-    DEBUG("4_15_IRQHandler\n");
+    //DEBUG("4_15_IRQHandler\n");
     if(EXTI_GetITStatus(EXTI_Line4) != RESET) {
         spi_itc();
     }
