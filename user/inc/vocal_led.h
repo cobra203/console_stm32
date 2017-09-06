@@ -19,8 +19,8 @@ typedef enum led_status_e
 typedef struct vocal_led_s
 {
     VOCAL_SYS_S     *vocal_sys;
-    STM32_LED_S     mic_led[MIC_DEV_NUM];
     STM32_LED_S     spk_led[SPK_DEV_NUM];
+    STM32_LED_S     mic_led[MIC_DEV_NUM];
     void            (*set)      (struct vocal_led_s *, VOCAL_DEV_TYPE_E, uint8_t, LED_STATUS_E);
 } VOCAL_LED_S;
 

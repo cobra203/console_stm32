@@ -46,6 +46,15 @@ void SVC_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 
+void TIM2_IRQHandler(void);
+void EXTI2_3_IRQHandler(void);
+void EXTI4_15_IRQHandler(void);
+#if 0
+void SPI1_IRQHandler(void);
+#endif
+void SPI2_IRQHandler(void);
+
+
 /*void PPP_IRQHandler(void);*/
 
 #ifdef __cplusplus

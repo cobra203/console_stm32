@@ -32,6 +32,10 @@ typedef struct spi_s
 void spi_itc(void);
 void spi_init_slave_itc(SPI_S *spi, void (*callback)(void *), void *args);
 void spi_init(SPI_S *spi, SPI_TypeDef *spi_id);
+#if 0
+void spi_master_recv_itc(void);
+void spi_master_send_itc(void);
+#endif
 
 #ifdef __cplusplus
 }

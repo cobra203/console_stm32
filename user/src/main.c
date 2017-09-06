@@ -52,63 +52,56 @@ static void rcc_config(void)
 {
     RCC_DeInit();
 
-    /* HSE = 24M */
 #if 0
-
+    /* HSE = 24M */
     RCC_HSEConfig(RCC_HSE_ON);
 
     BIT_SET(RCC->CR, RCC_FLAG_HSERDY);
-#endif
 
-    BIT_SET(RCC->CR, RCC_FLAG_HSIRDY);
-
-#if 0
     if(RCC_WaitForHSEStartUp() != ERROR) { 
         /* PLL = HSE * RCC_PLLSource_PREDIV1 * 2 = 48M */
         RCC_PREDIV1Config(RCC_PREDIV1_Div1);
         RCC_PLLConfig(RCC_PLLSource_PREDIV1, RCC_PLLMul_2);
         RCC_PLLCmd(ENABLE);
     }
-    else {
 #endif        
-        //DEBUG("HSE Start Up Fail, Use HSI\n");
-        RCC_HSEConfig(RCC_HSE_OFF);
-        /* HSI = 8M */
-        RCC_HSICmd(ENABLE);
+    //DEBUG("HSE Start Up Fail, Use HSI\n");
+    RCC_HSEConfig(RCC_HSE_OFF);
 
-        /* PLL = (HSI/2) * 12 = 48M */
-        RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_12);
-        RCC_PLLCmd(ENABLE);
-#if 0
-    }
-#endif
+    /* HSI = 8M */
+    RCC_HSICmd(ENABLE);
+    RCC_ClockSecuritySystemCmd(ENABLE);
 
-    BIT_SET(RCC->CR, RCC_FLAG_PLLRDY);
+    /* PLL = (HSI/2) * 12 = 48M */
+    RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_12);
+    RCC_PLLCmd(ENABLE);
 
     while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
 
     /* SYSCLK = PLLCLK = 48M */
     RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
-#if 1
-    BIT_SET(RCC->CFGR, 3);
-#endif
+
     while(RCC_GetSYSCLKSource() != 0x08);
 
     /* AHB CLK(HCLK) = SYS CLK = 48M */
     RCC_HCLKConfig(RCC_SYSCLK_Div1);
     /* APB CLK(PCLK) = HCLK = 48M */
     RCC_PCLKConfig(RCC_HCLK_Div1);
-
-    /* Set Flash Latency */
-    //FLASH_PrefetchBufferCmd(ENABLE);
-    //FLASH_SetLatency(FLASH_Latency_1);
-
-    //SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
     
+    /* Enable GPIO Clock */
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+    
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+    
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
+    
+    /* Set Flash Latency */
+    FLASH_PrefetchBufferCmd(ENABLE);
+    FLASH_SetLatency(FLASH_Latency_1);
 
-    //RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+    
 }
 
 /**
@@ -131,27 +124,13 @@ int main(void)
       
     /* Add your application code here
      */
-#if 1
     rcc_config();
-#endif
-#if 0
-    if(SysTick_Config(SystemCoreClock / 1000)) { 
-        /* Capture error */ 
-        while (1);
-    }
-#endif
-    //while(1);
-    timer_init();
-    //while(1);
-    vocal_init(&vocal_sys);
-    
 
-    DEBUG("While Start\n");
-static int tmp = 0;
+    vocal_init(&vocal_sys);
+
     /* Infinite loop */
     while (1)
     {
-        DEBUG("TMP=%d\n", tmp++);
         vocal_working(&vocal_sys);
     }
 }

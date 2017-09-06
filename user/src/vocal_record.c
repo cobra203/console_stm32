@@ -29,8 +29,14 @@
 #define FOR_RECORD_ITEM_ADDR_ID(idx, pos)  _FOR_RECORD_ITEM_ADDR((idx), (pos), ID)
 #define FOR_RECORD_ITEM_ADDR_VL(idx, pos)  _FOR_RECORD_ITEM_ADDR((idx), (pos), VL)
 
-#define FLASH_ReadHalfWord(Address, pData)  (*(pData) = *(uint16_t *)(Address))
-#define FLASH_ReadWord(Address, pData)      (*(pData) = *(uint32_t *)(Address))
+#define FLASH_ReadHalfWord(Address, pData)  (*(uint16_t *)(pData) = *(uint16_t *)(Address))
+#define FLASH_ReadWord(Address, pData)  \
+{                                                   \
+    uint16_t *pd = (uint16_t *)(pData);             \
+    uint16_t *pa = (uint16_t *)(Address);           \
+    FLASH_ReadHalfWord(pa++, pd++);                 \
+    FLASH_ReadHalfWord(pa, pd);                     \
+}
 
 #define _flash_read_halfword(addr, pdata)    FLASH_ReadHalfWord(addr, pdata)
 #define _flash_read_word(addr, pdata)        FLASH_ReadWord(addr, pdata)
@@ -42,7 +48,7 @@ static void _flash_write_halfword(uint32_t addr, uint16_t data)
     FLASH_Lock();
 }
 
-static void _flash_write_word(uint32_t addr, uint16_t data)
+static void _flash_write_word(uint32_t addr, uint32_t data)
 {
     FLASH_Unlock();
     FLASH_ProgramWord(addr, data);
@@ -55,7 +61,7 @@ static void _record_dev_id_page_erase(void)
 
     FLASH_Unlock();
     for(i = 0; i < RCD_ID_PAGE_NUM; i++) {
-        #if 0
+        #if 1
         FLASH_ErasePage(RCD_ID_PAGE_ADDR + i * STM32_PAGE_SIZE);
         #else
         for(int j = 0; j < STM32_PAGE_SIZE; j++) {
@@ -72,7 +78,7 @@ static void _record_volume_page_erase(void)
 
     FLASH_Unlock();
     for(i = 0; i < RCD_VL_PAGE_NUM; i++) {
-        #if 0
+        #if 1
         FLASH_ErasePage(RCD_VL_PAGE_ADDR + i * STM32_PAGE_SIZE);
         #else
         for(int j = 0; j < STM32_PAGE_SIZE; j++) {
@@ -180,9 +186,13 @@ static void _record_dev_id_write(VOCAL_RECORD_S *record)
     item_base_addr += sizeof(uint16_t);
 
     for(i = 0; i < MIC_DEV_NUM; i++) {
+        DEBUG("RECORD : [0x%08x]wirte : MIC[%d]=0x%08x\n", item_base_addr + i * sizeof(uint32_t),
+                i, *(uint32_t *)&record->mic_id[i]);
         _flash_write_word(item_base_addr + i * sizeof(uint32_t), *(uint32_t *)&record->mic_id[i]);
     }
     for(; i < MIC_DEV_NUM + SPK_DEV_NUM; i++) {
+        DEBUG("RECORD : [0x%08x]wirte : SPK[%d]=0x%08x\n", item_base_addr + i * sizeof(uint32_t),
+                i - MIC_DEV_NUM, *(uint32_t *)&record->spk_id[i - MIC_DEV_NUM]);
         _flash_write_word(item_base_addr + i * sizeof(uint32_t), *(uint32_t *)&record->spk_id[i - MIC_DEV_NUM]);
     }
 }
@@ -211,7 +221,8 @@ static void _record_volume_write(VOCAL_RECORD_S *record)
     data |= 0xa5;
     
     _flash_write_halfword(item_base_addr, data);
-    _flash_write_halfword(item_base_addr + sizeof(uint16_t), *(uint16_t *)&record->mic_vl);
+    _flash_write_halfword(item_base_addr + sizeof(uint16_t), non_align_data16(&record->mic_vl));
+    DEBUG("RECORD : write address 0x%08x\n", item_base_addr);
 }
 
 
@@ -226,10 +237,10 @@ static void record_dev_id_init(VOCAL_RECORD_S *record)
     FOR_RECORD_ITEM_ADDR_ID(&item_idx, &item_base_addr) {
 
         _flash_read_halfword(item_base_addr, &flag);
-        DEBUG("0x%08x: flag=0x%02x\n", item_base_addr, flag);
+        //DEBUG("0x%08x: flag=0x%02x\n", item_base_addr, flag);
 
         /* used */
-        if(flag == 0) {
+        if(flag == 0x0) {
             continue;
         }            
         /* using */
@@ -240,11 +251,15 @@ static void record_dev_id_init(VOCAL_RECORD_S *record)
             item_base_addr += sizeof(uint16_t);
             for(i = 0; i < MIC_DEV_NUM; i++) {
                 _flash_read_word(item_base_addr + i * sizeof(uint32_t), (uint32_t *)&record->mic_id[i]);
+                DEBUG("ADDR   : [0x%08x]", item_base_addr + i * sizeof(uint32_t));
+                datadump("", (void *)(item_base_addr + i * sizeof(uint32_t)), sizeof(4));
                 record->vocal_sys->mic_dev->nwk_dev[i].device_id = record->mic_id[i].device_id;
                 record->vocal_sys->mic_dev->nwk_dev[i].slot      = i;
             }
             for(; i < MIC_DEV_NUM + SPK_DEV_NUM; i++) {
                 _flash_read_word(item_base_addr + i * sizeof(uint32_t), (uint32_t *)&record->spk_id[i - MIC_DEV_NUM]);
+                DEBUG("ADDR   : [0x%08x]", item_base_addr + i * sizeof(uint32_t));
+                datadump("", (void *)(item_base_addr + i * sizeof(uint32_t)), sizeof(4));
                 record->vocal_sys->spk_dev->nwk_dev[i - MIC_DEV_NUM].device_id  = record->spk_id[i - MIC_DEV_NUM].device_id;
                 record->vocal_sys->spk_dev->nwk_dev[i - MIC_DEV_NUM].slot       = i - MIC_DEV_NUM;
             }
@@ -287,7 +302,7 @@ static void record_volume_init(VOCAL_RECORD_S *record)
 
         _flash_read_halfword(item_base_addr, &data);
         flag = data & 0xff;
-        DEBUG("0x%08x: 0x%04x, flag=0x%02x\n", item_base_addr, data, flag);
+        //DEBUG("0x%08x: 0x%04x, flag=0x%02x\n", item_base_addr, data, flag);
 
         /* used */
         if(flag == 0) {
@@ -354,6 +369,7 @@ static int record_add(VOCAL_RECORD_S *record, const uint32_t device_id, const VO
             record->spk_id[i].device_id = device_id;
             memcpy(&record->spk_vl, volume, sizeof(RECORD_VOLUME_S));
             *idx = i;
+            BIT_SET(record->active, i);
             return STM_SUCCESS;
         }
         break;
@@ -365,10 +381,12 @@ static int record_add(VOCAL_RECORD_S *record, const uint32_t device_id, const VO
             record->mic_id[i].device_id = device_id;
             memcpy(&record->mic_vl[i], volume, sizeof(RECORD_VOLUME_S));
             *idx = i;
+            BIT_SET(record->active, SPK_DEV_NUM + i);
             return STM_SUCCESS;
         }
         break;
-    default:
+    default:
+
         break;
     }
 
@@ -398,41 +416,11 @@ static int _record_rcd_get_or_set(VOCAL_RECORD_S *record, RCD_GET_OR_SET_E ctrl,
             src     = ctrl ? volume : &vl_head[ix];
             memcpy(dest, src, sizeof(RECORD_VOLUME_S));
             *idx = i;
-            BIT_SET(record->active, i + (DEV_TYPE_SPK == type) ? 0 : SPK_DEV_NUM);
+            BIT_SET(record->active, ((DEV_TYPE_SPK == type) ? 0 : SPK_DEV_NUM) + i);
             return STM_SUCCESS;
         }
     }
 
-#if 0
-    switch(type) {
-    case DEV_TYPE_SPK:
-        dest    = ctrl ? &record->spk_vl : volume;
-        src     = ctrl ? volume : &record->spk_vl;
-        for(i = 0; i < SPK_DEV_NUM; i++) {
-            if(device_id == record->spk_id[i]) {
-                memcpy(dest, src, sizeof(RECORD_VOLUME_S));
-                *idx = i;
-                BIT_SET(record->active, i);
-                return STM_SUCCESS;
-            }
-        }
-        break;
-    case DEV_TYPE_MIC:
-        for(i = 0; i < MIC_DEV_NUM; i++) {
-            dest    = ctrl ? &record->mic_vl[i] : volume;
-            src     = ctrl ? volume : &record->mic_vl[i];
-            if(device_id == record->mic_id[i]) {
-                memcpy(dest, src, sizeof(RECORD_VOLUME_S));
-                *idx = i;
-                BIT_SET(record->active, SPK_DEV_NUM + i);
-                return STM_SUCCESS;
-            }
-        }
-        break;
-    default:
-        break;
-    }
-#endif
     return STM_FAILURE;
 }
 
@@ -468,7 +456,7 @@ void record_init(VOCAL_SYS_S *vocal_sys)
 {
     record.vocal_sys    = vocal_sys;
 
-#if 1
+#if 0
     _record_dev_id_page_erase();
     _record_volume_page_erase();
 #endif
@@ -499,9 +487,6 @@ void record_init(VOCAL_SYS_S *vocal_sys)
 
     //record_dev_id_flash_print();
     //record_volume_flash_print();
-
-    record.dev_id_init(&record);
-    record.volume_init(&record);
 
     record_info_print(&record);
 }

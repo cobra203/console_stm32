@@ -58,7 +58,7 @@ typedef struct ehif_nwm_get_status_s
 
 typedef struct cc85xx_ehif_s
 {
-    VOCAL_DEV_TYPE_E    dev_id;
+    VOCAL_DEV_TYPE_E    dev_type;
     EHIF_STATUS_S       status;
     
     void    (*init)                 (struct cc85xx_ehif_s *, VOCAL_DEV_TYPE_E);
@@ -73,7 +73,7 @@ typedef struct cc85xx_ehif_s
     void    (*rc_get_data)          (struct cc85xx_ehif_s *, uint8_t, uint8_t *, uint8_t *);
 } CC85XX_EHIF_S;
 
-void ehif_init(CC85XX_EHIF_S *ehif, VOCAL_DEV_TYPE_E dev_id);
+void ehif_init(CC85XX_EHIF_S *ehif, VOCAL_DEV_TYPE_E dev_type);
 
 #ifdef __cplusplus
 }

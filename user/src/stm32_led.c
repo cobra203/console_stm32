@@ -3,8 +3,6 @@
 #include <stm32f0xx.h>
 #include <debug.h>
 
-#define TASK_BUTT   (sizeof(uint16_t) * 2)
-
 static uint8_t table_id_to_pin[SPK_DEV_NUM + MIC_DEV_NUM] = {6, 7, 0, 1, 9, 12};
 
 static void _led_id_transform(uint8_t id, uint16_t *pin, GPIO_TypeDef **port)
@@ -39,20 +37,23 @@ static void _led_callback_func(void *args)
 
     if(!led->status) {
         led->bright(led);
-        timer_set_reload(led->task, led->interval[0]);
+        timer_set_reload(led->timer, led->interval[0]);
     }
     else {
         led->dark(led);
-        timer_set_reload(led->task, led->interval[1]);
+        timer_set_reload(led->timer, led->interval[1]);
     }
 }
 
 static void _led_doing(STM32_LED_S *led)
 {
-    if(led->task < TASK_BUTT) {
-        timer_free(&led->task);
+#if 1
+    if(led->timer < TIMERS_NUM) {
+        
+        timer_free(&led->timer);
         led->dark(led);
     }
+#endif
 
     if(!led->interval[1]) {
         led->dark(led);
@@ -60,8 +61,8 @@ static void _led_doing(STM32_LED_S *led)
     else if(!led->interval[0]) {
         led->bright(led);
     }
-    else {
-        timer_task(&led->task, TMR_CYCLICITY, led->interval[0], led->interval[1], _led_callback_func, (void *)led);
+    else { 
+        timer_task(&led->timer, TMR_CYCLICITY, led->interval[0], led->interval[1], _led_callback_func, (void *)led);
     }
 }
 
@@ -84,7 +85,7 @@ void stm32_led_init(STM32_LED_S *led, uint16_t id)
     led->dark   = _led_dark;
     led->bright = _led_bright;
 
-    led->task   = TASK_BUTT;
+    led->timer  = TIMERS_NUM;
     led->status = 0;
 }
 

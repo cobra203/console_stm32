@@ -33,6 +33,9 @@
 #include <debug.h>
 #include <stm32_timer.h>
 #include <stm32_spi.h>
+#include <cc85xx_pair.h>
+#include <stm32f0xx_spi.h>
+
 
 /** @addtogroup Template_Project
   * @{
@@ -96,7 +99,8 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-    DEBUG("ss\n");
+    //DEBUG("ss\n");
+    timer_itc();
 }
 
 /******************************************************************************/
@@ -121,20 +125,55 @@ void SysTick_Handler(void)
 
 void TIM2_IRQHandler(void)
 {
-    //DEBUG("IT:TIM2\n");
+#if 1
     if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         
         timer_itc();
-    }   
+    }
+#endif
+}
+
+void EXTI2_3_IRQHandler(void)
+{
+    if(EXTI_GetITStatus(EXTI_Line2) != RESET) {
+        pair_itc();
+        EXTI_ClearITPendingBit(EXTI_Line2);
+    }
 }
 
 void EXTI4_15_IRQHandler(void)
 {
-    //DEBUG("4_15_IRQHandler\n");
     if(EXTI_GetITStatus(EXTI_Line4) != RESET) {
         spi_itc();
+        EXTI_ClearITPendingBit(EXTI_Line4);
     }
+    else if(EXTI_GetITStatus(EXTI_Line8) != RESET) {
+        pair_itc();
+        EXTI_ClearITPendingBit(EXTI_Line8);
+    }
+}
+#if 0
+void SPI1_IRQHandler(void)
+{
+    if(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_TXE) == SET) {
+        spi_master_send_itc();
+        SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, DISABLE);
+    }
+
+    if(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == SET) {
+        spi_master_recv_itc();
+    }
+
+    if(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_OVR) == SET) {
+        SPI_ReceiveData8(SPI1);
+        SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_OVR);
+    }
+}
+#endif
+void SPI2_IRQHandler(void)
+{
+
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

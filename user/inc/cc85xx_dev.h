@@ -40,13 +40,20 @@ typedef enum rang_of_set_volume_s
     RANG_SET_PC_ONLY,
 } RANG_OF_SET_VOLUME_S;
 
+typedef struct pair_status_s
+{
+    uint8_t     dev_idx     :7;
+    uint8_t     flag        :1;
+} PAIR_STATUS_S;
+
 typedef struct cc85xx_dev_s
 {
     VOCAL_SYS_S     *vocal_sys;
     uint8_t         nwk_enable;
     uint8_t         nwk_stable;
+    PAIR_STATUS_S   pair_status;
     NWK_DEV_INFO_S  nwk_dev[MAX_DEV_NUM];
-    NWK_INFO_S      nwk_info[MAX_DEV_NUM];
+    NWK_INFO_S      new_nwk_info[MAX_DEV_NUM];
     CC85XX_EHIF_S   ehif;
     void            (*init)             (struct cc85xx_dev_s *);
     void            (*nwk_chg_detect)   (struct cc85xx_dev_s *, VOCAL_DEV_TYPE_E);

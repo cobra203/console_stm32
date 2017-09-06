@@ -48,6 +48,23 @@ static int16_t _volume_to_db(int16_t lv) {
     return lv * 14;
 }
 
+static void _spk_init_remote_output_volume(CC85XX_DEV_S *dev)
+{
+
+    EHIF_SET_VOLUME_S   set_volume  = {VOLUME_IS_LOCAL_REMOTE, VOLUME_IS_IN_VOL_OUTPUT};
+
+    set_volume.mute_op      = 2;
+    set_volume.set_op       = 1;
+    set_volume.log_channel  = 0;
+    set_volume.volume       = 0;
+
+    if(dev->ehif.dev_type != DEV_TYPE_SPK) {
+        return;
+    }
+
+    dev->ehif.vc_set_volume(&dev->ehif, &set_volume);
+}
+
 static void _dev_set_volume_alone(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, int idx)
 {
     /* MIC device control the volume of the MIC and SPK */
@@ -56,29 +73,15 @@ static void _dev_set_volume_alone(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, int 
     EHIF_SET_VOLUME_S   set_volume  = {VOLUME_IS_LOCAL_LOCAL, VOLUME_IS_IN_VOL_OUTPUT};
 
     set_volume.mute_op      = 2;
-    set_volume.set_op       = 1;
-    set_volume.log_channel  = 0;
+    set_volume.set_op       = (DEV_TYPE_SPK == type) ? 1 : 3;
+    set_volume.log_channel  = (DEV_TYPE_SPK == type) ? 0 : dev->nwk_dev[idx].ach;
     set_volume.volume       = 0xfe70 + _volume_to_db(dev->nwk_dev[idx].volume);
 
-    switch(type) {
-    case DEV_TYPE_SPK:
-        if(dev->nwk_dev[idx].mute || dev->nwk_dev[idx].volume == 0) {
-            set_volume.volume       = 0xfc00;
-        }
-  
-        break;
-        
-    case DEV_TYPE_MIC:
-        if(dev->nwk_dev[idx].mute || dev->nwk_dev[idx].volume == 0) {
-            set_volume.set_op       = 3;
-            set_volume.log_channel  = dev->nwk_dev[idx].ach;
-            set_volume.volume       = 0xfc00;
-        }
-        break;
-    default:
-        return;
+    if(dev->nwk_dev[idx].mute || dev->nwk_dev[idx].volume == 0) {
+        set_volume.volume       = 0xfc00;
     }
 
+    //DEBUG("Set volume %s[%d]=0x%04x\n", type ? "MIC" : "SPK", idx, set_volume.volume);
     mic_dev->ehif.vc_set_volume(&mic_dev->ehif, &set_volume);
 }
 
@@ -96,6 +99,7 @@ static void _dev_set_volume(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, RANG_OF_SE
                 if(0 == dev->nwk_dev[i].cmd_rc) {
                     break;
                 }
+                _dev_set_volume_alone(dev, type, i);
                 pass = STM_TRUE;
             case RANG_SET_PC_ONLY:
                 if(pass || 0 == dev->nwk_dev[i].cmd_pc) {
@@ -115,9 +119,11 @@ static void _dev_set_volume(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, RANG_OF_SE
 
 static void _dev_nwk_pairing_callback(void *args)
 {
-    CC85XX_DEV_S *dev = (CC85XX_DEV_S *)args;
+    CC85XX_DEV_S    *dev = (CC85XX_DEV_S *)args;
     
-    dev->ehif.nwm_control_signal(&dev->ehif, STM_DISABLE);
+    if(dev->pair_status.flag) {
+        dev->ehif.nwm_control_signal(&dev->ehif, STM_DISABLE);
+    }
 }
 static void dev_nwk_pairing(CC85XX_DEV_S *dev, uint32_t time)
 {
@@ -137,39 +143,46 @@ static void dev_nwk_chg_detect(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type)
     VOCAL_SYS_S             *vocal_sys = dev->vocal_sys;
     
 
-    DEBUG("updata dev info");
+    DEBUG("%s:up\n", type ? "MIC" : "SPK");
 
-    if(dev->nwk_stable) {
-        dev->ehif.ehc_evt_clr(&dev->ehif, (1<<1));
-        dev->nwk_stable = STM_FALSE;
-    }
+    
 
-    memset(&dev->nwk_info, 0, sizeof(NWK_INFO_S) * MAX_DEV_NUM);
+    memset(&dev->new_nwk_info, 0, sizeof(NWK_INFO_S) * MAX_DEV_NUM);
 
     delay_ms(100);
+
     dev->ehif.nwm_get_status(&dev->ehif, &nwm_status);
     
+    if(dev->nwk_stable) {
+        
+        dev->nwk_stable = STM_FALSE;
+    }
+    dev->ehif.ehc_evt_clr(&dev->ehif, (1<<1));
     for(i = 0; i < dev_num; i++) {
-        device_id   = TOHOST32(*(uint32_t *)&nwm_status.dev_data[0 + i*16]);
-        ach_used    = TOHOST16(*(uint16_t *)&nwm_status.dev_data[12 + i*16]);
+        device_id   = TOHOST32(non_align_data32(&nwm_status.dev_data[0 + i*16]));
+        ach_used    = TOHOST16(non_align_data16(&nwm_status.dev_data[12 + i*16]));
+        DEBUG("%s NS : ach[%04x]dev[%08x]\n", type ? "MIC" : "SPK", ach_used, device_id);
+
         if(device_id) {
-            if(0 == ach_used) {
+            if(0 == ach_used || 0xffffffff == device_id) {
                 dev->ehif.nwm_control_enable(&dev->ehif, STM_DISABLE);
-                delay_ms(10);
+                delay_ms(30);
                 dev->ehif.nwm_control_enable(&dev->ehif, STM_ENABLE);
                 return;
             }
 
-            dev->nwk_info[i].device_id = device_id;
-            dev->nwk_info[i].ach_used  = _auido_channel_get(ach_used);
-            dev->nwk_info[i].slot      = (nwm_status.dev_data[15 + i*16] >> 1) & 0x7;
+            dev->new_nwk_info[i].device_id = device_id;
+            dev->new_nwk_info[i].ach_used  = _auido_channel_get(ach_used);
+            dev->new_nwk_info[i].slot      = (nwm_status.dev_data[15 + i*16] >> 1) & 0x7;
         }
     }
 
     dev->nwk_stable = STM_TRUE;
+    DEBUG("--stable--\n");
     
     if(DEV_TYPE_SPK == type) {
         vocal_sys->sys_evt.req_sync_spk_nwk = STM_TRUE;
+        _spk_init_remote_output_volume(dev);
     }
     else {
         vocal_sys->sys_evt.req_sync_mic_nwk = STM_TRUE;
@@ -189,9 +202,9 @@ static void dev_rc_cmd_detect(CC85XX_DEV_S *dev)
     for(i = 0; i < MIC_DEV_NUM; i++) {
         if(dev->nwk_dev[i].device_id) {
             dev->ehif.rc_get_data(&dev->ehif, dev->nwk_dev[i].slot, rc_data, &rc_count);
-            if(rc_count) {
+            if(rc_count && rc_data[0] >= OUTPUT_VOLUME_INCREMENT && rc_data[0] <= OUTPUT_VOLUME_MUTE) {
                 if(!cnt_record[i] || cmd_record[i] != rc_data[0]) {
-                    DEBUG("[%d]cmd=%d", times, rc_data[0]);
+                    DEBUG("[%d]cmd=%d, count=%d\n", times, rc_data[0], rc_count);
                     dev->nwk_dev[i].cmd_rc = rc_data[0];
                     vocal_sys->sys_evt.req_sync_rc_cmd = STM_TRUE;  
                 }
@@ -252,14 +265,14 @@ void mic_dev_init(VOCAL_SYS_S *vocal_sys)
 
 void spk_detect(VOCAL_SYS_S *vocal_sys)
 {
-    if(!spk_dev.ehif.status.cmdreq_rdy || spk_dev.ehif.status.pwr_state > 5) {
-        spk_dev.ehif.get_status(&spk_dev.ehif);
+    spk_dev.ehif.get_status(&spk_dev.ehif);
+    if(spk_dev.ehif.status.pwr_state > 5) {
         return;
     }
 
     if(!spk_dev.nwk_enable) {
         spk_dev.ehif.nwm_control_enable(&spk_dev.ehif, STM_DISABLE);
-        delay_ms(10);
+        delay_ms(30);
         spk_dev.ehif.nwm_control_enable(&spk_dev.ehif, STM_ENABLE);
         spk_dev.nwk_enable = STM_TRUE;
     }
@@ -271,14 +284,14 @@ void spk_detect(VOCAL_SYS_S *vocal_sys)
 
 void mic_detect(VOCAL_SYS_S *vocal_sys)
 {
-    if(!mic_dev.ehif.status.cmdreq_rdy || mic_dev.ehif.status.pwr_state > 5) {
-        mic_dev.ehif.get_status(&mic_dev.ehif);
+    mic_dev.ehif.get_status(&mic_dev.ehif);
+    if(mic_dev.ehif.status.pwr_state > 5) {
         return;
     }
 
     if(!mic_dev.nwk_enable) {
         mic_dev.ehif.nwm_control_enable(&mic_dev.ehif, STM_DISABLE);
-        delay_ms(10);
+        delay_ms(30);
         mic_dev.ehif.nwm_control_enable(&mic_dev.ehif, STM_ENABLE);
         mic_dev.nwk_enable = STM_TRUE;
     }

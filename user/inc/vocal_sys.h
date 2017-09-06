@@ -34,10 +34,12 @@ typedef struct vocal_sys_s
     struct vocal_record_s   *record;
     struct vocal_led_s      *led;
     void                    (*sync_nwk_dev)     (struct vocal_sys_s *, VOCAL_DEV_TYPE_E);
-    void                    (*sync_rc_cmd)      (struct vocal_sys_s *);
+    int                     (*sync_rc_cmd)      (struct vocal_sys_s *);
     void                    (*sync_pc_cmd)      (struct vocal_sys_s *);
     void                    (*nwk_pairing)      (struct vocal_sys_s *);
 } VOCAL_SYS_S;
+
+void vocal_nwk_pairing_callback(void *args);
 
 void vocal_init(VOCAL_SYS_S *vocal);
 void vocal_working(VOCAL_SYS_S *vocal);

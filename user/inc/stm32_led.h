@@ -12,7 +12,7 @@ typedef struct stm32_led_s
 {
     GPIO_TypeDef    *port;
     uint16_t        pin;
-    uint8_t         task;
+    uint8_t         timer;
     uint16_t        interval[2];
     uint8_t         status;
     void            (*init)         (struct stm32_led_s *, uint16_t);

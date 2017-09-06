@@ -5,6 +5,8 @@
  extern "C" {
 #endif
 
+#include <string.h>
+
 #define     BIT_ISSET(a, s) (((a) >> (s)) & 0x1)
 #define     BIT_SET(a, s)   ((a) = (a) | 0x1 << (s))
 #define     BIT_CLR(a, s)   ((a) = (a) & ~(0x1 << (s)))
@@ -25,14 +27,21 @@
 #define     MIC_CFG_NUM     2
 #define     SPK_CFG_NUM     1
 
+typedef union data_16_un {
+    uint16_t i;
+    uint8_t  s[2];
+} DATA_16_UN;
+
+typedef union data_32_un {
+    uint32_t i;
+    uint8_t  s[4];
+} DATA_32_UN;
+
 inline static int _check_endian(void) /* big reture true */
 {
-    union{
-        uint32_t i;
-        uint8_t  s[4];
-    } c;
+    DATA_16_UN c;
 
-    c.i = 0x12345678;
+    c.i = 0x1234;
     return (0x12 == c.s[0]);
 }
 
@@ -47,8 +56,29 @@ inline static int _check_endian(void) /* big reture true */
 #define TONET16(x)  (_check_endian() ? (x) : _SWAP16(x))
 #define TONET32(x)  (_check_endian() ? (x) : _SWAP32(x))
 
-#define TOHOST16(x) (_check_endian() ? _SWAP16(x) : (x))
-#define TOHOST32(x) (_check_endian() ? _SWAP32(x) : (x))
+#define TOHOST16(x) TONET16(x)
+#define TOHOST32(x) TONET32(x)
+
+inline static uint16_t non_align_data16(void *addr)
+{
+    uint8_t     *byte = addr;
+    DATA_16_UN  data;
+
+    memcpy(data.s, byte, sizeof(uint16_t));
+
+    return data.i;
+}
+
+inline static uint32_t non_align_data32(void *addr)
+{
+    uint8_t     *byte = addr;
+    DATA_32_UN  data;
+
+    
+    memcpy(data.s, byte, sizeof(uint32_t));
+
+    return data.i;
+}
 
 typedef enum vocal_dev_type_e
 {

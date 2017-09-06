@@ -35,6 +35,8 @@ void timer_set_reload(uint8_t id, uint32_t reload);
 void timer_itc(void);
 void timer_init(void);
 void timer_task(uint8_t *timer, TIMER_TYPE_E type, uint32_t delay, uint32_t load, TASK_F task, void *args);
+void timer_task_process(void);
+
 void delay_ms(uint32_t time);
 
 #ifdef __cplusplus

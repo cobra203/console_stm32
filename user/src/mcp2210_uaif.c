@@ -124,12 +124,13 @@ void uaif_init(MCP2210_UAIF_S *uaif, void (*process)(void *), void *args)
 
     gs_mcp2210_spi.init_slave_itc   = spi_init_slave_itc;
     gs_mcp2210_spi.init             = spi_init;
+    gs_mcp2210_spi.cs_pin           = GPIO_Pin_4;
 
     uaif->get_cmd_type  = uaif_get_cmd_type;
     uaif->set_volume    = uaif_SET_VOLUME;
     uaif->get_volume    = uaif_GET_VOLUME;
 
     gs_mcp2210_spi.init_slave_itc(&gs_mcp2210_spi, process, args);
-    gs_mcp2210_spi.init(&gs_mcp2210_spi, SPI1);
+    gs_mcp2210_spi.init(&gs_mcp2210_spi, SPI2);
 }
 
