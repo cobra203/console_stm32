@@ -2,15 +2,28 @@
 #include <stm32_timer.h>
 #include <stm32f0xx.h>
 #include <debug.h>
+#include <vocal_common.h>
 
-static uint8_t table_id_to_pin[SPK_DEV_NUM + MIC_DEV_NUM] = {6, 7, 0, 1, 9, 12};
+typedef struct led_gpio_pin_s
+{
+    GPIO_TypeDef    *gpio;
+    uint16_t        pin;
+} LED_GPIO_PIN_S;
+
+static LED_GPIO_PIN_S led_table_id_transform[SPK_DEV_NUM + MIC_DEV_NUM] = 
+{
+    {LED_GPIO_SPK1, LED_PIN_SPK1},
+    {LED_GPIO_SPK2, LED_PIN_SPK2},
+    {LED_GPIO_SPK3, LED_PIN_SPK3},
+    {LED_GPIO_SPK4, LED_PIN_SPK4},
+    {LED_GPIO_MIC1, LED_PIN_MIC1},
+    {LED_GPIO_MIC2, LED_PIN_MIC2}
+};
 
 static void _led_id_transform(uint8_t id, uint16_t *pin, GPIO_TypeDef **port)
 {
-    uint8_t pin_sit = table_id_to_pin[id];
-    
-    *pin = 0x1 << pin_sit;
-    *port = (pin_sit == 6 || pin_sit == 7) ? GPIOB : GPIOA;
+    *port   = led_table_id_transform[id].gpio;
+    *pin    = led_table_id_transform[id].pin;
 }
 
 static void _led_bright(STM32_LED_S *led)

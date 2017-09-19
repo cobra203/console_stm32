@@ -8,15 +8,6 @@
 #include <mcp2210_uaif.h>
 #include <vocal_sys.h>
 
-typedef struct mcp_status_s
-{
-    uint8_t evt_spk_chg     :1;
-    uint8_t evt_mic_chg     :1;
-    uint8_t state_spk_conn  :1;
-    uint8_t state_mic_conn  :1;
-    uint8_t                 :4;
-} MCP_STATUS_S;
-
 typedef struct volume_info_s
 {
     uint8_t         active;
@@ -24,16 +15,24 @@ typedef struct volume_info_s
     RECORD_VOLUME_S volume[SPK_CFG_NUM + MIC_CFG_NUM];
 } VOLUME_INFO_S;
 
+typedef enum pc_pair_cmd_e
+{
+    PC_PAIR_NONE = 0,
+    PC_PAIR_SPK,
+    PC_PAIR_MIC,
+} PC_PAIR_CMD_E;
+
 typedef struct mcp2210_dev_s
 {
     VOCAL_SYS_S     *vocal_sys;
     UAIF_STATUS_S   *status;
-    uint8_t         step;
-
+    UAIF_STATUS_S   *status_commit;
+    int             pair;
     VOLUME_INFO_S   info;
     MCP2210_UAIF_S  uaif;
     void            (*set_info)     (struct mcp2210_dev_s *, int, RECORD_VOLUME_S *);
-    void            (*clr_info)     (struct mcp2210_dev_s *, int);
+    void            (*clr_info)     (struct mcp2210_dev_s *, VOCAL_DEV_TYPE_E);
+    void            (*commit)       (struct mcp2210_dev_s *);
 } MCP2210_DEV_S;
 
 void mcp_dev_init(VOCAL_SYS_S *sys_status);

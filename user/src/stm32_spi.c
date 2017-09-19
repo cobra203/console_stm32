@@ -2,6 +2,7 @@
 #include <stm32f0xx_exti.h>
 #include <stm32f0xx_gpio.h>
 #include <stm32_spi.h>
+#include <vocal_common.h>
 #include <debug.h>
 
 #define _WAIT_SPI_STAUTS_SET(spi, flag)     while(SPI_I2S_GetFlagStatus((spi), (flag)) == RESET)
@@ -49,7 +50,7 @@ void spi_master_send_itc(void)
 }
 #endif
 
-static void spi_master_transfer(SPI_S *spi, const void *send_data, uint8_t send_sz, void *recv_data, uint8_t recv_sz)
+static int spi_master_transfer(SPI_S *spi, const void *send_data, uint8_t send_sz, void *recv_data, uint8_t recv_sz)
 {
     uint8_t         send_len     = send_sz;
     uint8_t         recv_len     = recv_sz;
@@ -93,60 +94,86 @@ static void spi_master_transfer(SPI_S *spi, const void *send_data, uint8_t send_
         recv_len ? recvbuf[recv_sz - recv_len--] = SPI_ReceiveData8(spi->spi_id) : SPI_ReceiveData8(spi->spi_id);
     }
 #endif
+    return STM_SUCCESS;
 }
 
-static void spi_slave_transfer(SPI_S *spi, const void *send_data, uint8_t send_len, void *recv_data, uint8_t recv_len)
+static int _spi_slave_tranfer_byte(SPI_S *spi, uint8_t send, uint8_t *recv)
 {
-    int             i;
-    uint8_t         size        = send_len > recv_len ? send_len : recv_len;
-    const uint8_t   *sendbuf    = (const uint8_t *)send_data;
-    uint8_t         *recvbuf    = (uint8_t *)recv_data;
-    
-    for(i = 0; i < size || !size; i++) {
-        
-        SLAVE_WAIT_RECV_EN(spi->spi_id, spi->cs_gpio, spi->cs_pin);
-        if(GPIO_ReadInputDataBit(spi->cs_gpio, spi->cs_pin) != Bit_RESET) {
-            break;
-        }
-        (recv_len > i) ? recvbuf[i] = SPI_ReceiveData8(spi->spi_id) : SPI_ReceiveData8(spi->spi_id);
+    int i;
+    *recv = 0;
 
-        SLAVE_WAIT_SEND_EN(spi->spi_id, spi->cs_gpio, spi->cs_pin);
-        if(GPIO_ReadInputDataBit(spi->cs_gpio, spi->cs_pin) != Bit_RESET) {
-            break;
+    for(i = 0; i < 8; i++) {
+        GPIO_WriteBit(spi->gpio_spi, spi->pin_miso, send & (0x1 << (7 - i)));
+
+        while(STM_TRUE) {      
+            if(Bit_SET == GPIO_ReadInputDataBit(spi->gpio_spi, spi->pin_sck)) {
+                break;
+            }
+            if(Bit_SET == GPIO_ReadInputDataBit(spi->gpio_spi, spi->pin_cs)) {
+                return STM_FAILURE;
+            }
         }
-        (send_len > i) ? SPI_SendData8(spi->spi_id, sendbuf[i]) : SPI_SendData8(spi->spi_id, 0);
+        
+        if(GPIO_ReadInputDataBit(spi->gpio_spi, spi->pin_mosi)) {
+            BIT_SET(*recv, 7 - i);
+        }
+   
+        while(STM_TRUE) {
+            if(Bit_RESET == GPIO_ReadInputDataBit(spi->gpio_spi, spi->pin_sck)) {
+                break;
+            }
+            if(Bit_SET == GPIO_ReadInputDataBit(spi->gpio_spi, spi->pin_cs)) {
+                return STM_FAILURE;
+            }
+        }
     }
-    
+
+    return STM_SUCCESS;
+}
+
+int tmpdebug = 0;
+
+static int spi_slave_transfer(SPI_S *spi, const void *send_data, uint8_t send_sz, void *recv_data, uint8_t recv_sz)
+{
+    uint8_t         send_len     = send_sz;
+    uint8_t         recv_len     = recv_sz;
+    uint8_t         size        = send_sz > recv_sz ? send_sz : recv_sz;
+    uint8_t         *sendbuf    = (uint8_t *)send_data;
+    uint8_t         *recvbuf    = (uint8_t *)recv_data;
+    uint8_t         recvnull    = 0;
+    int             ret = STM_SUCCESS;
+
+    while(size-- && (STM_SUCCESS == ret)) {
+        ret = _spi_slave_tranfer_byte(spi, send_len ? sendbuf[send_sz - send_len--] : 0xff,
+                                     recv_len ? (recvbuf + recv_sz - recv_len--) : &recvnull);
+    }
+
+#if 1
+    if(tmpdebug) {
+        datadump("s", (void *)send_data, send_sz);
+        datadump("r", recv_data, recv_sz);
+    }
+#endif
+    return ret;
 }
 
 static void spi2_st_init(SPI_S *spi)
 {
     GPIO_InitTypeDef    gpio_cfg = {0};
-    EXTI_InitTypeDef    exti_cfg = {0};
-    NVIC_InitTypeDef    nvic_cfg;
-    
+  
     gpio_cfg.GPIO_Speed     = GPIO_Speed_Level_3;
     gpio_cfg.GPIO_OType     = GPIO_OType_PP;
-    gpio_cfg.GPIO_Mode      = GPIO_Mode_AF;
-    
-    gpio_cfg.GPIO_Pin       = GPIO_Pin_5 | GPIO_Pin_7 | spi->pin_miso;
-    GPIO_Init(GPIOA, &gpio_cfg);
 
-    gpio_cfg.GPIO_Pin       = spi->cs_pin;
+    gpio_cfg.GPIO_Pin       = spi->pin_miso;
+    gpio_cfg.GPIO_Mode      = GPIO_Mode_OUT;
+    GPIO_Init(spi->gpio_spi, &gpio_cfg);
+
+    gpio_cfg.GPIO_Pin       = spi->pin_sck | spi->pin_mosi;
     gpio_cfg.GPIO_Mode      = GPIO_Mode_IN;
-    GPIO_Init(GPIOA, &gpio_cfg);
+    GPIO_Init(spi->gpio_spi, &gpio_cfg);
 
-    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource4);
-    exti_cfg.EXTI_Line      = EXTI_Line4;
-    exti_cfg.EXTI_Mode      = EXTI_Mode_Interrupt;
-    exti_cfg.EXTI_Trigger   = EXTI_Trigger_Falling;
-    exti_cfg.EXTI_LineCmd   = ENABLE;
-    EXTI_Init(&exti_cfg);
-
-    nvic_cfg.NVIC_IRQChannelPriority    = 3;
-    nvic_cfg.NVIC_IRQChannel            = EXTI4_15_IRQn;
-    nvic_cfg.NVIC_IRQChannelCmd         = ENABLE;
-    NVIC_Init(&nvic_cfg);
+    gpio_cfg.GPIO_Pin       = spi->pin_cs;
+    GPIO_Init(spi->gpio_cs, &gpio_cfg);
 }
 
 static void spi1_st_init(SPI_S *spi)
@@ -154,17 +181,17 @@ static void spi1_st_init(SPI_S *spi)
     GPIO_InitTypeDef    gpio_cfg = {0};
     
     gpio_cfg.GPIO_Speed     = GPIO_Speed_Level_3;
-    gpio_cfg.GPIO_OType     = GPIO_OType_PP;
+    gpio_cfg.GPIO_OType     = GPIO_OType_PP;   
+    
+    gpio_cfg.GPIO_Pin       = spi->pin_sck | spi->pin_miso | spi->pin_mosi;
     gpio_cfg.GPIO_Mode      = GPIO_Mode_AF;
-    
-    gpio_cfg.GPIO_Pin       = GPIO_Pin_3 | GPIO_Pin_5 | spi->pin_miso;
-    GPIO_Init(GPIOB, &gpio_cfg);
+    GPIO_Init(spi->gpio_spi, &gpio_cfg);
 
-    gpio_cfg.GPIO_Pin       = spi->cs_pin;
+    gpio_cfg.GPIO_Pin       = spi->pin_cs;
     gpio_cfg.GPIO_Mode      = GPIO_Mode_OUT;
-    GPIO_Init(GPIOA, &gpio_cfg);
+    GPIO_Init(spi->gpio_cs, &gpio_cfg);
     
-    GPIO_WriteBit(GPIOA, spi->cs_pin, Bit_SET);  
+    GPIO_WriteBit(spi->gpio_cs, spi->pin_cs, Bit_SET);  
 }
 
 void spi_itc(void)
@@ -184,18 +211,20 @@ void spi_init(SPI_S *spi, SPI_TypeDef *spi_id)
     SPI_InitTypeDef     spi_struct  = {0};
     
     if(spi_id == SPI2) {
-        spi->pin_miso           = GPIO_Pin_6;
-        spi->cs_gpio            = GPIOA;
-        spi->spi_gpio           = GPIOA;
-        spi_struct.SPI_Mode     = SPI_Mode_Slave;
+        spi->pin_sck            = MCP_PIN_SCK;
+        spi->pin_miso           = MCP_PIN_MISO;
+        spi->pin_mosi           = MCP_PIN_MOSI;
+        spi->gpio_spi           = MCP_GPIO_SPI;
  
         spi2_st_init(spi);
         spi->transfer = spi_slave_transfer;
+        return;
     }
     else if(spi_id == SPI1) {
-        spi->pin_miso           = GPIO_Pin_4;
-        spi->cs_gpio            = GPIOA;
-        spi->spi_gpio           = GPIOB;
+        spi->pin_sck            = TI_PIN_SCK;
+        spi->pin_miso           = TI_PIN_MISO; 
+        spi->pin_mosi           = TI_PIN_MOSI;
+        spi->gpio_spi           = TI_GPIO_SPI;
         spi_struct.SPI_Mode     = SPI_Mode_Master;
 
         spi1_st_init(spi);

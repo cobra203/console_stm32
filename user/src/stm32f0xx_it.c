@@ -35,7 +35,7 @@
 #include <stm32_spi.h>
 #include <cc85xx_pair.h>
 #include <stm32f0xx_spi.h>
-
+#include <vocal_common.h>
 
 /** @addtogroup Template_Project
   * @{
@@ -68,10 +68,24 @@ void NMI_Handler(void)
   */
 void HardFault_Handler(void)
 {
-  /* Go to infinite loop when Hard Fault exception occurs */
-  while (1)
-  {
-  }
+    /* Go to infinite loop when Hard Fault exception occurs */
+    GPIO_InitTypeDef    gpio_struct;
+
+    gpio_struct.GPIO_Speed  = GPIO_Speed_Level_3;
+    gpio_struct.GPIO_Mode   = GPIO_Mode_OUT;
+    gpio_struct.GPIO_PuPd   = GPIO_PuPd_UP;
+    gpio_struct.GPIO_OType  = GPIO_OType_OD;
+    gpio_struct.GPIO_Pin    = LED_PIN_MIC4;
+
+    GPIO_Init(LED_GPIO_MIC4, &gpio_struct);
+    GPIO_ResetBits(LED_GPIO_MIC4, gpio_struct.GPIO_Pin);
+#if 0
+    __disable_irq();
+    NVIC_SystemReset();
+#endif
+    while (1)
+    {
+    }
 }
 
 /**
@@ -144,10 +158,24 @@ void EXTI2_3_IRQHandler(void)
 
 void EXTI4_15_IRQHandler(void)
 {
-    if(EXTI_GetITStatus(EXTI_Line4) != RESET) {
+    if(EXTI_GetITStatus(EXTI_Line4) != RESET) {                        
+        //__disable_irq();
+        //GPIO_WriteBit(GPIOA, GPIO_Pin_6, Bit_RESET);
         spi_itc();
+        //__enable_irq();
         EXTI_ClearITPendingBit(EXTI_Line4);
     }
+#if 0
+    else if(EXTI_GetITStatus(EXTI_Line5) != RESET) {
+        if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_5)) {
+
+        }
+        else {
+
+        }
+        EXTI_ClearITPendingBit(EXTI_Line5);
+    }
+#endif
     else if(EXTI_GetITStatus(EXTI_Line8) != RESET) {
         pair_itc();
         EXTI_ClearITPendingBit(EXTI_Line8);

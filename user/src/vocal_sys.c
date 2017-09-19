@@ -9,6 +9,8 @@
 #include <debug.h>
 #include <stm32_timer.h>
 #include <stm32f0xx_spi.h>
+#include <vocal_common.h>
+
 
 static void vocal_sync_nwk_dev(VOCAL_SYS_S *vocal_sys, VOCAL_DEV_TYPE_E type)
 {
@@ -25,6 +27,7 @@ static void vocal_sync_nwk_dev(VOCAL_SYS_S *vocal_sys, VOCAL_DEV_TYPE_E type)
 
     DEBUG("nwk sync\n");
     memset(nwk_dev, 0, sizeof(NWK_DEV_INFO_S) * MAX_DEV_NUM);
+    mcp_dev->clr_info(mcp_dev, type);
     record->active &= ((DEV_TYPE_SPK == type) ? 0xf0 : 0xf);
     
     for(i = 0; i < dev_num; i++) {
@@ -37,11 +40,17 @@ static void vocal_sync_nwk_dev(VOCAL_SYS_S *vocal_sys, VOCAL_DEV_TYPE_E type)
                 nwk_dev[idx].mute       = volume.mute; 
                 DEBUG("[o] : %s[%d]|ach[0x%04x]|dev[0x%08x]\n", (DEV_TYPE_SPK == type) ? "SPK" : "MIC", 
                             i, nwk_dev[idx].ach, nwk_dev[idx].device_id);
+                /* sync to mcp */
+                mcp_dev->set_info(mcp_dev, (DEV_TYPE_SPK == type) ? idx : (SPK_DEV_NUM + idx), &volume);
+                /* sync to led */
                 led->set(led, type, idx, LED_STATUS_CONNECT);
-                mcp_dev->set_info(mcp_dev, (DEV_TYPE_SPK == type) ? 0 : idx + SPK_CFG_NUM, &volume);
-            }/* wen ti */
+
+                /* set flags */
+                if(dev->pair_status.flag) {
+                    dev->pair_status.flag = STM_FALSE;
+                }
+            }
             else {
-                mcp_dev->clr_info(mcp_dev, (DEV_TYPE_SPK == type) ? 0 : idx + SPK_CFG_NUM);
                 flag[i] = STM_TRUE;
             }
         }
@@ -55,6 +64,7 @@ static void vocal_sync_nwk_dev(VOCAL_SYS_S *vocal_sys, VOCAL_DEV_TYPE_E type)
                 volume.volume   = record->spk_vl.volume;
                 volume.mute     = record->spk_vl.mute;
             }
+            /* sync to record */
             record->add(record, new_nwk_info[i].device_id, type, &volume, &idx);
             nwk_dev[idx].device_id  = new_nwk_info[i].device_id;
             nwk_dev[idx].ach        = new_nwk_info[i].ach_used;
@@ -63,16 +73,22 @@ static void vocal_sync_nwk_dev(VOCAL_SYS_S *vocal_sys, VOCAL_DEV_TYPE_E type)
             nwk_dev[idx].mute       = volume.mute;
             DEBUG("[n] : %s[%d]|ach[0x%04x]|dev[0x%08x]\n", (DEV_TYPE_SPK == type) ? "SPK" : "MIC",
                         i, nwk_dev[idx].ach, nwk_dev[idx].device_id);
+            /* sync to mcp */
+            mcp_dev->set_info(mcp_dev, (DEV_TYPE_SPK == type) ? idx : (SPK_DEV_NUM + idx), &volume);
+            /* sync to led */
+            led->set(led, type, idx, LED_STATUS_CONNECT);
+            
+            /* set flags */
             if(dev->pair_status.flag) {
                 dev->pair_status.flag = STM_FALSE;
             }
-            led->set(led, type, idx, LED_STATUS_CONNECT);
-            mcp_dev->set_info(mcp_dev, ((DEV_TYPE_SPK == type) ? 0 : SPK_CFG_NUM) + idx, &volume);
             record->evt.rcd_evt_dev_id_chg  = STM_TRUE;
             record->evt.rcd_evt_volume_chg  = STM_TRUE;
         }
     }
 
+    mcp_dev->commit(mcp_dev);
+    
     for(i = 0; i < dev_num; i++) {
         if(!BIT_ISSET(record->active, i + ((DEV_TYPE_SPK == type) ? 0 : SPK_DEV_NUM))) {
             led->set(led, type, i, LED_STATUS_CLOSED);
@@ -123,14 +139,16 @@ static int vocal_sync_rc_cmd(VOCAL_SYS_S *vocal_sys)
             volume.mute    = nwk_dev[i].mute;
             
             record->set(record, nwk_dev[i].device_id, DEV_TYPE_MIC, &volume, &idx);
-            mcp_dev->set_info(mcp_dev, SPK_CFG_NUM + idx, &volume);
+            mcp_dev->set_info(mcp_dev, SPK_DEV_NUM + idx, &volume);
 
             record->evt.rcd_evt_volume_chg = STM_TRUE;
             ret = STM_SUCCESS;
         }
     }
-    
+
+    mcp_dev->commit(mcp_dev);
     vocal_sys->sys_evt.req_sync_rc_cmd = STM_FALSE;
+    
     return ret;
 }
 
@@ -141,6 +159,19 @@ static void vocal_sync_pc_cmd(VOCAL_SYS_S *vocal)
     CC85XX_DEV_S    *mic_dev    = vocal->mic_dev;
     CC85XX_DEV_S    *spk_dev    = vocal->spk_dev;
     VOCAL_RECORD_S  *record     = vocal->record;
+    CC85XX_PAIR_S   *pair       = vocal->pair;
+
+    if(BIT_ISSET(mcp_dev->info.mcp_req, SPK_CFG_NUM + MIC_CFG_NUM + DEV_TYPE_SPK)) {
+        DEBUG("pc_cmd spk pair\n");
+        pair->set_active(pair, DEV_TYPE_SPK);
+        BIT_CLR(mcp_dev->info.mcp_req, SPK_CFG_NUM + MIC_CFG_NUM + DEV_TYPE_SPK);
+    }
+
+    if(BIT_ISSET(mcp_dev->info.mcp_req, SPK_CFG_NUM + MIC_CFG_NUM + DEV_TYPE_MIC)) {
+        DEBUG("pc_cmd mic pair\n");
+        pair->set_active(pair, DEV_TYPE_MIC);
+        BIT_CLR(mcp_dev->info.mcp_req, SPK_CFG_NUM + MIC_CFG_NUM + DEV_TYPE_MIC);
+    }
     
     if(BIT_ISSET(mcp_dev->info.mcp_req, 0)) {
         for(i = 0; i < SPK_DEV_NUM; i++) {
@@ -151,6 +182,7 @@ static void vocal_sync_pc_cmd(VOCAL_SYS_S *vocal)
                 record->set(record, spk_dev->nwk_dev[i].device_id, DEV_TYPE_SPK, &mcp_dev->info.volume[0], &idx);
             }
         }
+        BIT_CLR(mcp_dev->info.mcp_req, 0);
     }
 
     for(i = 0; i < MIC_DEV_NUM; i++) {
@@ -160,6 +192,7 @@ static void vocal_sync_pc_cmd(VOCAL_SYS_S *vocal)
             mic_dev->nwk_dev[i].cmd_pc  = STM_TRUE;
             record->set(record, mic_dev->nwk_dev[i].device_id, DEV_TYPE_MIC, &mcp_dev->info.volume[SPK_CFG_NUM + i], &idx);
         }
+        BIT_CLR(mcp_dev->info.mcp_req, SPK_CFG_NUM + i);
     }
 
     vocal->sys_evt.req_sync_pc_cmd = STM_FALSE;
@@ -213,29 +246,6 @@ static void vocal_nwk_pairing(VOCAL_SYS_S *vocal)
             }
         }
     }
-#if 0    
-    if(pair->btn_pair[DEV_TYPE_SPK].state.avtice) {
-        for(i = 0; i < SPK_DEV_NUM; i++) {
-            if(BIT_ISSET(record->active, i)) {
-                continue;
-            }
-            spk_dev->nwk_pairing(spk_dev, 1000);
-            led->set(led, DEV_TYPE_SPK, i, LED_STATUS_PAIRING);
-        }
-        
-    }
-    
-    if(pair->btn_pair[DEV_TYPE_MIC].state.avtice) {
-        for(i = 0; i < MIC_DEV_NUM; i++) {
-            if(BIT_ISSET(record->active, SPK_DEV_NUM + i)) {
-                continue;
-            }
-            mic_dev->nwk_pairing(mic_dev, 1000);
-            led->set(led, DEV_TYPE_MIC, i, LED_STATUS_PAIRING);
-            mic_dev->nwk_pairing(mic_dev, 1);
-        }
-    }
-#endif
     vocal->sys_evt.req_pairing = STM_FALSE;
 }
 
@@ -246,18 +256,54 @@ void stop_init(void)
     init_struct.GPIO_Mode   = GPIO_Mode_IN;
     init_struct.GPIO_PuPd   = GPIO_PuPd_UP;
     init_struct.GPIO_Speed  = GPIO_Speed_Level_3;
-    init_struct.GPIO_Pin    = GPIO_Pin_8 | GPIO_Pin_2;
-    GPIO_Init(GPIOA, &init_struct);
+    init_struct.GPIO_Pin    = PAIR_PIN_SPK | PAIR_PIN_MIC;
+    GPIO_Init(PAIR_GPIO, &init_struct);
 }
 
 int stop_detect(void)
 {
     uint16_t port_value;
-    port_value = GPIO_ReadInputData(GPIOA);
+    port_value = GPIO_ReadInputData(PAIR_GPIO);
 
-    return (~port_value >> 2) & 0x1;
+    return ((~port_value) & PAIR_PIN_SPK) || ((~port_value) & PAIR_PIN_MIC);
 }
 
+static void vocal_exti_init(void)
+{
+    EXTI_InitTypeDef    exti_cfg = {0};
+    NVIC_InitTypeDef    nvic_cfg;
+    
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource2);
+    exti_cfg.EXTI_Line      = EXTI_Line2;
+    exti_cfg.EXTI_Mode      = EXTI_Mode_Interrupt;
+    exti_cfg.EXTI_Trigger   = EXTI_Trigger_Rising_Falling;
+    exti_cfg.EXTI_LineCmd   = ENABLE;
+    EXTI_Init(&exti_cfg);
+
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource8);
+    exti_cfg.EXTI_Line      = EXTI_Line8;
+    exti_cfg.EXTI_Mode      = EXTI_Mode_Interrupt;
+    exti_cfg.EXTI_Trigger   = EXTI_Trigger_Rising_Falling;
+    exti_cfg.EXTI_LineCmd   = ENABLE;
+    EXTI_Init(&exti_cfg);
+#if 1
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource4);
+    exti_cfg.EXTI_Line      = EXTI_Line4;
+    exti_cfg.EXTI_Mode      = EXTI_Mode_Interrupt;
+    exti_cfg.EXTI_Trigger   = EXTI_Trigger_Falling;
+    exti_cfg.EXTI_LineCmd   = ENABLE;
+    EXTI_Init(&exti_cfg);
+#endif   
+    nvic_cfg.NVIC_IRQChannelPriority    = 3;
+    nvic_cfg.NVIC_IRQChannel            = EXTI2_3_IRQn;
+    nvic_cfg.NVIC_IRQChannelCmd         = ENABLE;
+    NVIC_Init(&nvic_cfg);
+
+    nvic_cfg.NVIC_IRQChannelPriority    = 1;
+    nvic_cfg.NVIC_IRQChannel            = EXTI4_15_IRQn;
+    nvic_cfg.NVIC_IRQChannelCmd         = ENABLE;
+    NVIC_Init(&nvic_cfg);
+}
 
 void vocal_init(VOCAL_SYS_S *vocal)
 {
@@ -266,7 +312,6 @@ void vocal_init(VOCAL_SYS_S *vocal)
     vocal->sync_pc_cmd  = vocal_sync_pc_cmd;
     vocal->nwk_pairing  = vocal_nwk_pairing;
 
-    //while(1);
     timer_init();
     
     led_init(vocal);
@@ -277,9 +322,6 @@ void vocal_init(VOCAL_SYS_S *vocal)
     if(stop_detect()) {
         vocal->led->set(vocal->led, DEV_TYPE_SPK, 3, LED_STATUS_CONNECT);
         while(1);
-    }
-    else {
-        vocal->led->set(vocal->led, DEV_TYPE_SPK, 3, LED_STATUS_PAIRING);
     }
 
     mic_dev_init(vocal);
@@ -292,12 +334,14 @@ void vocal_init(VOCAL_SYS_S *vocal)
     vocal->spk_dev->ehif.get_status(&vocal->spk_dev->ehif);
     
     mcp_dev_init(vocal);
+
+    vocal_exti_init();
 }
 
 void vocal_working(VOCAL_SYS_S *vocal)
 {
     while(STM_TRUE) {
-        
+        #if 1
         spk_detect(vocal);
         if(vocal->sys_evt.req_sync_spk_nwk) {
             vocal->sync_nwk_dev(vocal, DEV_TYPE_SPK);
@@ -316,7 +360,7 @@ void vocal_working(VOCAL_SYS_S *vocal)
             vocal->mic_dev->execute(vocal->mic_dev, DEV_TYPE_MIC, RANG_SET_RC_ONLY);
             vocal->record->commit(vocal->record);
         }
-        #if 0
+        
         if(vocal->sys_evt.req_sync_pc_cmd) {
             vocal->sync_pc_cmd(vocal);
             vocal->spk_dev->execute(vocal->spk_dev, DEV_TYPE_SPK, RANG_SET_PC_ONLY);

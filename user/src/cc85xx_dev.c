@@ -88,29 +88,25 @@ static void _dev_set_volume_alone(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, int 
 static void _dev_set_volume(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, RANG_OF_SET_VOLUME_S rang)
 {
     int     i = 0;
-    int     pass;
     uint8_t dev_num = (DEV_TYPE_SPK == type) ? SPK_DEV_NUM : MIC_DEV_NUM;
 
     for(i = 0; i < dev_num; i++) {
         if(dev->nwk_dev[i].device_id) {
-            pass = STM_FALSE;
             switch(rang) {
             case RANG_SET_RC_ONLY:
                 if(0 == dev->nwk_dev[i].cmd_rc) {
                     break;
                 }
                 _dev_set_volume_alone(dev, type, i);
-                pass = STM_TRUE;
+                dev->nwk_dev[i].cmd_rc = 0;
+                break;
             case RANG_SET_PC_ONLY:
-                if(pass || 0 == dev->nwk_dev[i].cmd_pc) {
+                if(0 == dev->nwk_dev[i].cmd_pc) {
                     break;
                 }
+                dev->nwk_dev[i].cmd_pc = 0;
             case RANG_SET_ALL_DEV:
                 _dev_set_volume_alone(dev, type, i);
-                if(DEV_TYPE_SPK == type) {
-                    /* All the SPK device is same volume */
-                    break;
-                }
                 break;
             }
         }
@@ -204,7 +200,7 @@ static void dev_rc_cmd_detect(CC85XX_DEV_S *dev)
             dev->ehif.rc_get_data(&dev->ehif, dev->nwk_dev[i].slot, rc_data, &rc_count);
             if(rc_count && rc_data[0] >= OUTPUT_VOLUME_INCREMENT && rc_data[0] <= OUTPUT_VOLUME_MUTE) {
                 if(!cnt_record[i] || cmd_record[i] != rc_data[0]) {
-                    DEBUG("[%d]cmd=%d, count=%d\n", times, rc_data[0], rc_count);
+                    DEBUG("DEV[%d]:times[%d]cmd=%d, count=%d\n", i, times, rc_data[0], rc_count);
                     dev->nwk_dev[i].cmd_rc = rc_data[0];
                     vocal_sys->sys_evt.req_sync_rc_cmd = STM_TRUE;  
                 }

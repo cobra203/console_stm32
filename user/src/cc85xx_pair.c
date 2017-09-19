@@ -21,44 +21,23 @@ static void _pairing_process(CC85XX_PAIR_S *pair)
     }
 }
 
+static void _pairing_set_active(CC85XX_PAIR_S *pair, VOCAL_DEV_TYPE_E type)
+{
+    pair->btn_pair[type].state.avtice = STM_TRUE;
+}
+
 void pair_init(VOCAL_SYS_S *sys_status)
 { 
     int                 i;
     GPIO_InitTypeDef    init_struct = {0};
-    EXTI_InitTypeDef    exti_cfg = {0};
-    NVIC_InitTypeDef    nvic_cfg;
 
     cc85xx_pair.vocal_sys   = sys_status;
 
     init_struct.GPIO_Mode   = GPIO_Mode_IN;
     init_struct.GPIO_PuPd   = GPIO_PuPd_UP;
-    init_struct.GPIO_Speed  = GPIO_Speed_Level_2;
-    init_struct.GPIO_Pin    = GPIO_Pin_8 | GPIO_Pin_2;
-    GPIO_Init(GPIOA, &init_struct);
-
-    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource2);
-    exti_cfg.EXTI_Line      = EXTI_Line2;
-    exti_cfg.EXTI_Mode      = EXTI_Mode_Interrupt;
-    exti_cfg.EXTI_Trigger   = EXTI_Trigger_Rising_Falling;
-    exti_cfg.EXTI_LineCmd   = ENABLE;
-    EXTI_Init(&exti_cfg);
-
-    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource8);
-    exti_cfg.EXTI_Line      = EXTI_Line8;
-    exti_cfg.EXTI_Mode      = EXTI_Mode_Interrupt;
-    exti_cfg.EXTI_Trigger   = EXTI_Trigger_Rising_Falling;
-    exti_cfg.EXTI_LineCmd   = ENABLE;
-    EXTI_Init(&exti_cfg);
-    
-    nvic_cfg.NVIC_IRQChannelPriority    = 3;
-    nvic_cfg.NVIC_IRQChannel            = EXTI2_3_IRQn;
-    nvic_cfg.NVIC_IRQChannelCmd         = ENABLE;
-    NVIC_Init(&nvic_cfg);
-
-    nvic_cfg.NVIC_IRQChannelPriority    = 3;
-    nvic_cfg.NVIC_IRQChannel            = EXTI4_15_IRQn;
-    nvic_cfg.NVIC_IRQChannelCmd         = ENABLE;
-    NVIC_Init(&nvic_cfg);
+    init_struct.GPIO_Speed  = GPIO_Speed_Level_3;
+    init_struct.GPIO_Pin    = PAIR_PIN_SPK | PAIR_PIN_MIC;
+    GPIO_Init(PAIR_GPIO, &init_struct);
     
 #if 0
     init_struct.GPIO_Mode   = GPIO_Mode_OUT;
@@ -66,6 +45,7 @@ void pair_init(VOCAL_SYS_S *sys_status)
     init_struct.GPIO_Pin    = GPIO_Pin_8 | GPIO_Pin_2;
     GPIO_Init(GPIOB, &init_struct);
 #endif
+
     for(i = 0; i < sizeof(cc85xx_pair.btn_pair)/sizeof(BUTTON_S); i++) {
         cc85xx_pair.btn_pair[i].check_active      = button_check_active;
         cc85xx_pair.btn_pair[i].type              = i;
@@ -73,17 +53,18 @@ void pair_init(VOCAL_SYS_S *sys_status)
         cc85xx_pair.btn_pair[i].interval.pressed  = 20;
         cc85xx_pair.btn_pair[i].interval.focused  = 100;
     }
-    cc85xx_pair.process = _pairing_process;
+    cc85xx_pair.process     = _pairing_process;
+    cc85xx_pair.set_active  = _pairing_set_active;
     sys_status->pair    = &cc85xx_pair;
     
 }
 
 void pair_itc(void)
 {
-    int16_t gpio_vol = GPIO_ReadInputData(GPIOA);
+    int16_t gpio_vol = GPIO_ReadInputData(PAIR_GPIO);
 
-    cc85xx_pair.btn_pair[DEV_TYPE_SPK].state.press = (~gpio_vol >> 2) & 0x1;
-    cc85xx_pair.btn_pair[DEV_TYPE_MIC].state.press = (~gpio_vol >> 8) & 0x1;  
+    cc85xx_pair.btn_pair[DEV_TYPE_SPK].state.press = (~gpio_vol) & PAIR_PIN_SPK ? 1 : 0;
+    cc85xx_pair.btn_pair[DEV_TYPE_MIC].state.press = (~gpio_vol) & PAIR_PIN_MIC ? 1 : 0;
 }
 
 void pair_detect(void)

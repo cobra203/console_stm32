@@ -5,8 +5,8 @@
  extern "C" {
 #endif
 
-#define DEBUG_ENABLE1
-#define DUMP_ENABLE1
+#define DEBUG_ENABLE
+#define DUMP_ENABLE
 
 #if defined(DEBUG_ENABLE)
 #include <stdio.h>

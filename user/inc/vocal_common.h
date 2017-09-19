@@ -6,6 +6,7 @@
 #endif
 
 #include <string.h>
+#include <vocal_pin_def.h>
 
 #define     BIT_ISSET(a, s) (((a) >> (s)) & 0x1)
 #define     BIT_SET(a, s)   ((a) = (a) | 0x1 << (s))

@@ -4,6 +4,7 @@
 #include <stm32_spi.h>
 #include <debug.h>
 #include <stm32_timer.h>
+#include <vocal_common.h>
 
 /* EHIF Cmd Type Defines */
 typedef enum ehif_cmd_req_type_e
@@ -15,12 +16,12 @@ typedef enum ehif_cmd_req_type_e
     CMD_EHC_EVT_MASK          = 0x1A,
     CMD_EHC_EVT_CLR           = 0x19,
     
-    CMD_NVM_DO_SCAN           = 0x08,
-    CMD_NVM_DO_JOIN           = 0x09,
-    CMD_NVM_GET_STATUS        = 0x0A,
-    CMD_NVM_ACH_SET_USAGE     = 0x0B,
-    CMD_NVM_CONTROL_ENABLE    = 0x0C,
-    CMD_NVM_CONTROL_SIGNAL    = 0x0D,
+    CMD_NWM_DO_SCAN           = 0x08,
+    CMD_NWM_DO_JOIN           = 0x09,
+    CMD_NWM_GET_STATUS        = 0x0A,
+    CMD_NWM_ACH_SET_USAGE     = 0x0B,
+    CMD_NWM_CONTROL_ENABLE    = 0x0C,
+    CMD_NWM_CONTROL_SIGNAL    = 0x0D,
     
     CMD_DSC_TX_DATAGRAM       = 0x04,  
     CMD_DSC_RX_DATAGRAM       = 0x05,
@@ -85,17 +86,15 @@ static SPI_S gs_cc85xx_spi[2];
 
 static void cc85xx_spi_set_enable(SPI_S *spi, uint8_t enable)
 {
-    GPIO_WriteBit(spi->cs_gpio, spi->cs_pin, enable ? Bit_RESET : Bit_SET);
+    GPIO_WriteBit(spi->gpio_cs, spi->pin_cs, enable ? Bit_RESET : Bit_SET);
     delay_ms(1);
 #if 1
     if(enable) {
-        while(GPIO_ReadInputDataBit(spi->spi_gpio, spi->pin_miso) == Bit_RESET);
+        while(GPIO_ReadInputDataBit(spi->gpio_spi, spi->pin_miso) == Bit_RESET);
     }
 #endif
     //SPI_Cmd(spi->spi_id, enable ? ENABLE : DISABLE);
 }
-
-static int tmpdebug;
 
 static void _basic_operation(CC85XX_EHIF_S *ehif, EHIF_MAGIC_NAM_E magic,
                         uint16_t cmd, uint16_t *len, void *data, EHIF_STATUS_S *status)
@@ -230,7 +229,7 @@ static void ehif_NWM_CONTROL_ENABLE(CC85XX_EHIF_S *ehif, uint8_t enable)
 {
     uint8_t sendbuf[2] = {0, enable};
 
-    _basic_CMD_REQ(ehif, CMD_NVM_CONTROL_ENABLE, sizeof(sendbuf), sendbuf, &ehif->status);
+    _basic_CMD_REQ(ehif, CMD_NWM_CONTROL_ENABLE, sizeof(sendbuf), sendbuf, &ehif->status);
 }
 
 static void ehif_NWM_CONTROL_SIGNAL(CC85XX_EHIF_S *ehif, uint8_t enable)
@@ -242,7 +241,7 @@ static void ehif_NWM_CONTROL_SIGNAL(CC85XX_EHIF_S *ehif, uint8_t enable)
         delay_ms(10);
         _basic_GET_STATUS(ehif, &status);
     }
-    _basic_CMD_REQ(ehif, CMD_NVM_CONTROL_SIGNAL, sizeof(sendbuf), sendbuf, &ehif->status);
+    _basic_CMD_REQ(ehif, CMD_NWM_CONTROL_SIGNAL, sizeof(sendbuf), sendbuf, &ehif->status);
     DEBUG("EHIF   : %s Signal %s\n", ehif->dev_type ? "MIC" : "SPK", enable ? "enable" : "disable");
 }
 
@@ -255,7 +254,7 @@ static void ehif_NWM_GET_STATUS(CC85XX_EHIF_S *ehif, EHIF_NWM_GET_STATUS_S *nwm_
         _basic_GET_STATUS(ehif, &status);
     }
     
-    _basic_CMD_REQ(ehif, CMD_NVM_GET_STATUS, 0, NULL, &ehif->status);
+    _basic_CMD_REQ(ehif, CMD_NWM_GET_STATUS, 0, NULL, &ehif->status);
     _basic_READ(ehif, sizeof(EHIF_NWM_GET_STATUS_S), nwm_status, &ehif->status);
 }
 
@@ -289,10 +288,11 @@ void ehif_init(CC85XX_EHIF_S *ehif, VOCAL_DEV_TYPE_E dev_type)
 {
     ehif->dev_type = dev_type;
 
-    gs_cc85xx_spi[ehif->dev_type].dev        = ehif->dev_type;
-    gs_cc85xx_spi[ehif->dev_type].cs_pin     = (dev_type == DEV_TYPE_SPK) ? GPIO_Pin_15 : GPIO_Pin_10;
-    gs_cc85xx_spi[ehif->dev_type].init       = spi_init;
-    gs_cc85xx_spi[ehif->dev_type].set_enable = cc85xx_spi_set_enable;
+    gs_cc85xx_spi[ehif->dev_type].dev           = ehif->dev_type;
+    gs_cc85xx_spi[ehif->dev_type].pin_cs        = (dev_type == DEV_TYPE_SPK) ? SPK_CS_PIN   : MIC_CS_PIN;
+    gs_cc85xx_spi[ehif->dev_type].gpio_cs       = (dev_type == DEV_TYPE_SPK) ? SPK_CS_GPIO  : MIC_CS_GPIO;
+    gs_cc85xx_spi[ehif->dev_type].init          = spi_init;
+    gs_cc85xx_spi[ehif->dev_type].set_enable    = cc85xx_spi_set_enable;
 
     gs_cc85xx_spi[ehif->dev_type].init(&gs_cc85xx_spi[ehif->dev_type], SPI1);
 

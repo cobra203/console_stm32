@@ -18,16 +18,21 @@ typedef struct spi_s
 {
     uint8_t         dev;
     SPI_TypeDef     *spi_id;
-    GPIO_TypeDef    *cs_gpio;
-    GPIO_TypeDef    *spi_gpio;
-    uint16_t        cs_pin;
+    GPIO_TypeDef    *gpio_cs;
+    GPIO_TypeDef    *gpio_spi;
+    uint16_t        pin_cs;
     uint16_t        pin_miso;
+    uint16_t        pin_mosi;
+    uint16_t        pin_sck;
 
     void (*init_slave_itc)  (struct spi_s *, void (*)(void *), void *);
     void (*init)            (struct spi_s *, SPI_TypeDef *);
     void (*set_enable)      (struct spi_s *, uint8_t);
-    void (*transfer)        (struct spi_s *, const void *, uint8_t, void *, uint8_t);
+    int  (*transfer)        (struct spi_s *, const void *, uint8_t, void *, uint8_t);
 }SPI_S;
+
+
+extern int tmpdebug;
 
 void spi_itc(void);
 void spi_init_slave_itc(SPI_S *spi, void (*callback)(void *), void *args);

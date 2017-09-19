@@ -14,6 +14,7 @@ typedef struct cc85xx_pair_s
     VOCAL_SYS_S     *vocal_sys;
     BUTTON_S        btn_pair[2];
     void            (*process)      (struct cc85xx_pair_s *);
+    void            (*set_active)   (struct cc85xx_pair_s *, VOCAL_DEV_TYPE_E type);
 } CC85XX_PAIR_S;
 
 void pair_itc(void);

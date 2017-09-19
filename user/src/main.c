@@ -95,7 +95,7 @@ static void rcc_config(void)
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
     
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
+    //RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
     
     /* Set Flash Latency */
     FLASH_PrefetchBufferCmd(ENABLE);

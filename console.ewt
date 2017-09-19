@@ -335,6 +335,9 @@
       <name>$PROJ_DIR$\USER\inc\vocal_led.h</name>
     </file>
     <file>
+      <name>$PROJ_DIR$\USER\inc\vocal_pin_def.h</name>
+    </file>
+    <file>
       <name>$PROJ_DIR$\USER\src\vocal_record.c</name>
     </file>
     <file>

@@ -105,64 +105,6 @@ static void record_info_print(VOCAL_RECORD_S *record)
     }
 }
 
-static void record_dev_id_item_print(int index, uint32_t base_addr)
-{
-    int         i = 0;
-    uint32_t    data = 0;
-
-    _flash_read_halfword(base_addr, &data);
-    DEBUG("0x%08x: 0x%04x", base_addr, data);
-    
-    base_addr += sizeof(uint16_t);
-    for(i = 0; i < MIC_DEV_NUM; i++) {
-        _flash_read_word(base_addr + i * sizeof(uint32_t), &data);
-        DEBUG(", M[%d]=0x%08x", i, data);
-
-    }
-    for(; i < MIC_DEV_NUM + SPK_DEV_NUM; i++) {
-        _flash_read_word(base_addr + i * sizeof(uint32_t), &data);
-        DEBUG(", S[%d]=0x%08x", i, data);
-    }
-    DEBUG("\n");
-}
-
-static void record_volume_item_print(int index, uint32_t base_addr)
-{
-    uint16_t    data = 0;
-
-    _flash_read_halfword(base_addr, &data);
-    DEBUG("0x%08x: 0x%04x", base_addr, data);
-
-    DEBUG(", S=%02x", (data >> 8) & 0xff);
-    
-    _flash_read_word(base_addr + sizeof(uint16_t), &data);
-    DEBUG(", M[0]=0x%02x", data & 0xff);
-    DEBUG(", M[1]=0x%02x\n", (data >> 8) & 0xff);
-}
-
-
-static void record_dev_id_flash_print(void)
-{
-    int         item_idx;
-    uint32_t    item_base_addr;
-
-    DEBUG("dev_id_flash_print\n");
-    FOR_RECORD_ITEM_ADDR_ID(&item_idx, &item_base_addr) {
-        record_dev_id_item_print(item_idx, item_base_addr);
-    }
-}
-
-static void record_volume_flash_print(void)
-{
-    int         item_idx;
-    uint32_t    item_base_addr;
-
-    DEBUG("volume_flash_print\n");
-    FOR_RECORD_ITEM_ADDR_VL(&item_idx, &item_base_addr) {
-        record_volume_item_print(item_idx, item_base_addr);
-    }
-}
-
 static void _record_dev_id_write(VOCAL_RECORD_S *record)
 {
     int         i = 0;
@@ -251,14 +193,14 @@ static void record_dev_id_init(VOCAL_RECORD_S *record)
             item_base_addr += sizeof(uint16_t);
             for(i = 0; i < MIC_DEV_NUM; i++) {
                 _flash_read_word(item_base_addr + i * sizeof(uint32_t), (uint32_t *)&record->mic_id[i]);
-                DEBUG("ADDR   : [0x%08x]", item_base_addr + i * sizeof(uint32_t));
+                DEBUG("ADDR   : [0x%08x]\n", item_base_addr + i * sizeof(uint32_t));
                 datadump("", (void *)(item_base_addr + i * sizeof(uint32_t)), sizeof(4));
                 record->vocal_sys->mic_dev->nwk_dev[i].device_id = record->mic_id[i].device_id;
                 record->vocal_sys->mic_dev->nwk_dev[i].slot      = i;
             }
             for(; i < MIC_DEV_NUM + SPK_DEV_NUM; i++) {
                 _flash_read_word(item_base_addr + i * sizeof(uint32_t), (uint32_t *)&record->spk_id[i - MIC_DEV_NUM]);
-                DEBUG("ADDR   : [0x%08x]", item_base_addr + i * sizeof(uint32_t));
+                DEBUG("ADDR   : [0x%08x]\n", item_base_addr + i * sizeof(uint32_t));
                 datadump("", (void *)(item_base_addr + i * sizeof(uint32_t)), sizeof(4));
                 record->vocal_sys->spk_dev->nwk_dev[i - MIC_DEV_NUM].device_id  = record->spk_id[i - MIC_DEV_NUM].device_id;
                 record->vocal_sys->spk_dev->nwk_dev[i - MIC_DEV_NUM].slot       = i - MIC_DEV_NUM;
