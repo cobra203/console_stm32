@@ -10,7 +10,7 @@
 #define STM32_PAGE_SIZE         0x400
 
 #define RCD_ID_PAGE_NUM         1
-#define RCD_VL_PAGE_NUM         2
+#define RCD_VL_PAGE_NUM         15
 
 #define RCD_ID_PAGE_ADDR        (STM32_TAIL_ADDR - RCD_ID_PAGE_NUM * STM32_PAGE_SIZE)
 #define RCD_VL_PAGE_ADDR        (RCD_ID_PAGE_ADDR - RCD_VL_PAGE_NUM * STM32_PAGE_SIZE)

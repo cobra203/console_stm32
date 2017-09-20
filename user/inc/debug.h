@@ -5,7 +5,7 @@
  extern "C" {
 #endif
 
-#define DEBUG_ENABLE
+#define DEBUG_ENABLE2
 #define DUMP_ENABLE2
 
 #if defined(DEBUG_ENABLE)

@@ -11,7 +11,6 @@
 #include <stm32f0xx_spi.h>
 #include <vocal_common.h>
 
-
 static void vocal_sync_nwk_dev(VOCAL_SYS_S *vocal_sys, VOCAL_DEV_TYPE_E type)
 {
     int                     i, idx;
@@ -383,7 +382,6 @@ void vocal_working(VOCAL_SYS_S *vocal)
             vocal->record->erase(vocal->record);
             restore_led_bright();
             delay_ms(3000);
-            vocal->sys_evt.req_record_clean = STM_FALSE;
             vocal_reboot();
         }
 
