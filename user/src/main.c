@@ -113,7 +113,8 @@ int main(void)
 {
     //while(1);
     
-    VOCAL_SYS_S vocal_sys;
+    VOCAL_SYS_S vocal_sys = {0};
+
     
     /*!< At this stage the microcontroller clock setting is already configured, 
        this is done through SystemInit() function which is called from startup

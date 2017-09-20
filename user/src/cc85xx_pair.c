@@ -12,10 +12,22 @@ static CC85XX_PAIR_S    cc85xx_pair;
 static void _pairing_process(CC85XX_PAIR_S *pair)
 {
     VOCAL_SYS_S *vocal_sys = pair->vocal_sys;
+    static int  focused_times[sizeof(pair->btn_pair)/sizeof(BUTTON_S)] = {0};
     
     int i;
     for(i = 0; i < sizeof(pair->btn_pair)/sizeof(BUTTON_S); i++) {
         if(pair->btn_pair[i].state.avtice) {
+            DEBUG("effective=%d\n", pair->btn_pair[i].state.effective);
+            if(ECT_FOCUSED == pair->btn_pair[i].state.effective) {
+                focused_times[i]++;
+                if(90 == focused_times[i]) {
+                    vocal_sys->sys_evt.req_record_clean = STM_TRUE;
+                    focused_times[i] = 0;
+                }
+            }
+            else {
+                focused_times[i] = 0;
+            }
             vocal_sys->sys_evt.req_pairing = STM_TRUE;
         }
     }

@@ -17,7 +17,8 @@ struct vocal_led_s;
 typedef struct sys_evt_s
 {
     uint8_t req_pairing         :1;
-    uint8_t                     :3;
+    uint8_t req_record_clean    :1;
+    uint8_t                     :2;
     uint8_t req_sync_spk_nwk    :1;
     uint8_t req_sync_mic_nwk    :1;
     uint8_t req_sync_rc_cmd     :1;
@@ -40,7 +41,6 @@ typedef struct vocal_sys_s
 } VOCAL_SYS_S;
 
 void vocal_nwk_pairing_callback(void *args);
-
 void vocal_init(VOCAL_SYS_S *vocal);
 void vocal_working(VOCAL_SYS_S *vocal);
 

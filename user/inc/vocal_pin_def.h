@@ -5,22 +5,22 @@
  extern "C" {
 #endif
 
-#include <stm32f0xx.h>
-
 #define VER_RELEASE         0
-#define VER_DEBUG_DEMO      0
-#define VER_DEBUG_ST_LINK   1
+#define VER_DEBUG_DEMO      1
+#define VER_DEBUG_ST_LINK   2
 
-#if defined(VER_RELEASE)
+#define VERSION VER_DEBUG_ST_LINK
+
+#if (VERSION == VER_RELEASE)
 
 #define MIC_CS_GPIO         GPIOB
 #define MIC_CS_PIN          GPIO_Pin_1
 
-#elif defined(VER_DEBUG_DEMO)
+#elif (VERSION == VER_DEBUG_DEMO) 
 #define MIC_CS_GPIO         GPIOA
 #define MIC_CS_PIN          GPIO_Pin_14
 
-#elif defined(VER_DEBUG_ST_LINK)
+#elif (VERSION == VER_DEBUG_ST_LINK)
 #define MIC_CS_GPIO         GPIOA
 #define MIC_CS_PIN          GPIO_Pin_10
 
@@ -51,20 +51,19 @@
 #define LED_PIN_SPK3        GPIO_Pin_0
 #define LED_PIN_SPK4        GPIO_Pin_1
 
-#if defined(VER_RELEASE)
-
+#if (VERSION == VER_RELEASE)
 #define LED_PIN_MIC1        GPIO_Pin_12
 #define LED_PIN_MIC2        GPIO_Pin_11
 #define LED_PIN_MIC3        GPIO_Pin_10
 #define LED_PIN_MIC4        GPIO_Pin_9
 
-#elif defined(VER_DEBUG_DEMO)
+#elif (VERSION == VER_DEBUG_DEMO)
 #define LED_PIN_MIC1        GPIO_Pin_13
 #define LED_PIN_MIC2        GPIO_Pin_12
 #define LED_PIN_MIC3        GPIO_Pin_11
 #define LED_PIN_MIC4        GPIO_Pin_10
 
-#elif defined(VER_DEBUG_ST_LINK)
+#elif (VERSION == VER_DEBUG_ST_LINK)
 #define LED_PIN_MIC1        GPIO_Pin_9
 #define LED_PIN_MIC2        GPIO_Pin_12
 #define LED_PIN_MIC3        GPIO_Pin_11

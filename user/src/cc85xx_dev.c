@@ -137,23 +137,19 @@ static void dev_nwk_chg_detect(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type)
     uint16_t                ach_used = 0;
     uint8_t                 dev_num = (DEV_TYPE_SPK == type) ? SPK_DEV_NUM : MIC_DEV_NUM;
     VOCAL_SYS_S             *vocal_sys = dev->vocal_sys;
-    
 
     DEBUG("%s:up\n", type ? "MIC" : "SPK");
 
-    
-
     memset(&dev->new_nwk_info, 0, sizeof(NWK_INFO_S) * MAX_DEV_NUM);
 
+    dev->ehif.ehc_evt_clr(&dev->ehif, (1<<1));
     delay_ms(100);
-
     dev->ehif.nwm_get_status(&dev->ehif, &nwm_status);
     
-    if(dev->nwk_stable) {
-        
+    if(dev->nwk_stable) { 
         dev->nwk_stable = STM_FALSE;
     }
-    dev->ehif.ehc_evt_clr(&dev->ehif, (1<<1));
+    
     for(i = 0; i < dev_num; i++) {
         device_id   = TOHOST32(non_align_data32(&nwm_status.dev_data[0 + i*16]));
         ach_used    = TOHOST16(non_align_data16(&nwm_status.dev_data[12 + i*16]));

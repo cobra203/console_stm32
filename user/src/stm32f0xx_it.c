@@ -36,6 +36,7 @@
 #include <cc85xx_pair.h>
 #include <stm32f0xx_spi.h>
 #include <vocal_common.h>
+#include <vocal_sys.h>
 
 /** @addtogroup Template_Project
   * @{
@@ -69,6 +70,11 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
     /* Go to infinite loop when Hard Fault exception occurs */
+    
+#if 0
+    __disable_irq();
+    NVIC_SystemReset();
+#else
     GPIO_InitTypeDef    gpio_struct;
 
     gpio_struct.GPIO_Speed  = GPIO_Speed_Level_3;
@@ -79,9 +85,6 @@ void HardFault_Handler(void)
 
     GPIO_Init(LED_GPIO_MIC4, &gpio_struct);
     GPIO_ResetBits(LED_GPIO_MIC4, gpio_struct.GPIO_Pin);
-#if 0
-    __disable_irq();
-    NVIC_SystemReset();
 #endif
     while (1)
     {
@@ -139,7 +142,7 @@ void SysTick_Handler(void)
 
 void TIM2_IRQHandler(void)
 {
-#if 1
+#if 0
     if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
         TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
         
@@ -160,7 +163,6 @@ void EXTI4_15_IRQHandler(void)
 {
     if(EXTI_GetITStatus(EXTI_Line4) != RESET) {                        
         //__disable_irq();
-        //GPIO_WriteBit(GPIOA, GPIO_Pin_6, Bit_RESET);
         spi_itc();
         //__enable_irq();
         EXTI_ClearITPendingBit(EXTI_Line4);

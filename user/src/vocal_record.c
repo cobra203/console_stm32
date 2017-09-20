@@ -4,15 +4,16 @@
 #include <stm32f0xx_flash.h>
 #include <debug.h>
 #include <cc85xx_dev.h>
+#include <vocal_common.h>
 
 #define STM32_TAIL_ADDR         0x08008000
 #define STM32_PAGE_SIZE         0x400
 
 #define RCD_ID_PAGE_NUM         1
-#define RCD_VL_PAGE_NUM         1
+#define RCD_VL_PAGE_NUM         2
 
-#define RCD_VL_PAGE_ADDR        (STM32_TAIL_ADDR - RCD_VL_PAGE_NUM * STM32_PAGE_SIZE)
-#define RCD_ID_PAGE_ADDR        (RCD_VL_PAGE_ADDR - RCD_VL_PAGE_NUM * STM32_PAGE_SIZE)
+#define RCD_ID_PAGE_ADDR        (STM32_TAIL_ADDR - RCD_ID_PAGE_NUM * STM32_PAGE_SIZE)
+#define RCD_VL_PAGE_ADDR        (RCD_ID_PAGE_ADDR - RCD_VL_PAGE_NUM * STM32_PAGE_SIZE)
 
 #define RCD_ID_SIZE             (sizeof(uint32_t) * (4 + 2) + 2)
 #define RCD_VL_SIZE             (sizeof(uint8_t) * 3 + 1)
@@ -23,7 +24,7 @@
 
 #define _FOR_RECORD_ITEM_ADDR(idx, pos, type) \
                                 for(*(idx) = 0, *(pos) = _ITRM_ADDR(*(idx), type); \
-                                    *(idx) < (STM32_PAGE_SIZE / RCD_##type##_SIZE) * RCD_ID_PAGE_NUM; \
+                                    *(idx) < (STM32_PAGE_SIZE / RCD_##type##_SIZE) * RCD_##type##_PAGE_NUM; \
                                     *(idx) += 1, *(pos) = _ITRM_ADDR(*(idx), type))
 
 #define FOR_RECORD_ITEM_ADDR_ID(idx, pos)  _FOR_RECORD_ITEM_ADDR((idx), (pos), ID)
@@ -42,27 +43,43 @@
 #define _flash_read_word(addr, pdata)        FLASH_ReadWord(addr, pdata)
 
 static void _flash_write_halfword(uint32_t addr, uint16_t data)
-{  
+{
+    FLASH_Status status;
+    
     FLASH_Unlock();
-    FLASH_ProgramHalfWord(addr, data);
+    status = FLASH_ProgramHalfWord(addr, data);
     FLASH_Lock();
+    if(status != FLASH_COMPLETE) {
+        DEBUG("wh:status=%d\n", status);
+        error_reboot();
+    }
 }
 
 static void _flash_write_word(uint32_t addr, uint32_t data)
 {
+    FLASH_Status status;
+
     FLASH_Unlock();
-    FLASH_ProgramWord(addr, data);
+    status = FLASH_ProgramWord(addr, data);
     FLASH_Lock();
+    if(status != FLASH_COMPLETE) {
+        DEBUG("wh:status=%d\n", status);
+        error_reboot();
+    }
 }
 
 static void _record_dev_id_page_erase(void)
 {
     int i = 0;
+    FLASH_Status status;
 
     FLASH_Unlock();
     for(i = 0; i < RCD_ID_PAGE_NUM; i++) {
         #if 1
-        FLASH_ErasePage(RCD_ID_PAGE_ADDR + i * STM32_PAGE_SIZE);
+        status = FLASH_ErasePage(RCD_ID_PAGE_ADDR + i * STM32_PAGE_SIZE);
+        if(status != FLASH_COMPLETE) {
+            error_reboot();
+        }
         #else
         for(int j = 0; j < STM32_PAGE_SIZE; j++) {
             *(uint8_t *)(RCD_ID_PAGE_ADDR + j) = 0xff;
@@ -75,11 +92,15 @@ static void _record_dev_id_page_erase(void)
 static void _record_volume_page_erase(void)
 {
     int i = 0;
-
+    FLASH_Status status;
+    
     FLASH_Unlock();
     for(i = 0; i < RCD_VL_PAGE_NUM; i++) {
         #if 1
-        FLASH_ErasePage(RCD_VL_PAGE_ADDR + i * STM32_PAGE_SIZE);
+        status = FLASH_ErasePage(RCD_VL_PAGE_ADDR + i * STM32_PAGE_SIZE);
+        if(status != FLASH_COMPLETE) {
+            error_reboot();
+        }
         #else
         for(int j = 0; j < STM32_PAGE_SIZE; j++) {
             *(uint8_t *)(RCD_VL_PAGE_ADDR + j) = 0xff;
@@ -259,6 +280,7 @@ static void record_volume_init(VOCAL_RECORD_S *record)
             record->spk_vl      = *(RECORD_VOLUME_S *)(&volume);
 
             _flash_read_halfword(item_base_addr + sizeof(uint16_t), &data);
+            DEBUG("ADDR   : [0x%08x]\n", item_base_addr + sizeof(uint16_t));
             volume              = data & 0xff;
             record->mic_vl[0]   = *(RECORD_VOLUME_S *)(&volume);
             volume              = (data >> 8) & 0xff;
@@ -393,15 +415,15 @@ static int record_commit(VOCAL_RECORD_S *record)
     return STM_TRUE;
 }
 
+static void record_erase(VOCAL_RECORD_S *record)
+{
+    _record_dev_id_page_erase();
+    _record_volume_page_erase();
+}
 
 void record_init(VOCAL_SYS_S *vocal_sys)
 {
     record.vocal_sys    = vocal_sys;
-
-#if 0
-    _record_dev_id_page_erase();
-    _record_volume_page_erase();
-#endif
 
     record.dev_id_init  = record_dev_id_init;
     record.volume_init  = record_volume_init;
@@ -409,26 +431,12 @@ void record_init(VOCAL_SYS_S *vocal_sys)
     record.get          = record_get;
     record.set          = record_set;
     record.commit       = record_commit;
-    
+    record.erase        = record_erase;
 
     vocal_sys->record   = &record;
 
     record.dev_id_init(&record);
     record.volume_init(&record);
-
-    //record_dev_id_flash_print();
-    //record_volume_flash_print();
-
-    //for(int i = 0; i < 43; i++) {
-    //    vocal_sys->record->dev_id_write(vocal_sys->record);
-    //}
-
-    //for(int i = 0; i < 260; i++) {
-    //    record_volume_write(&record);
-    //}
-
-    //record_dev_id_flash_print();
-    //record_volume_flash_print();
 
     record_info_print(&record);
 }

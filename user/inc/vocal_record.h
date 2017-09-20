@@ -38,6 +38,7 @@ typedef struct vocal_record_s
     int         (*get)          (struct vocal_record_s *, const uint32_t, const VOCAL_DEV_TYPE_E, RECORD_VOLUME_S *, int *);
     int         (*set)          (struct vocal_record_s *, const uint32_t, const VOCAL_DEV_TYPE_E, const RECORD_VOLUME_S *, int *);
     int         (*commit)       (struct vocal_record_s *);
+    void        (*erase)        (struct vocal_record_s *);
 } VOCAL_RECORD_S;
 
 void record_init(VOCAL_SYS_S *vocal_sys);

@@ -6,7 +6,7 @@
 #endif
 
 #define DEBUG_ENABLE
-#define DUMP_ENABLE
+#define DUMP_ENABLE2
 
 #if defined(DEBUG_ENABLE)
 #include <stdio.h>

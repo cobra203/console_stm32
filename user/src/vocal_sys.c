@@ -138,11 +138,11 @@ static int vocal_sync_rc_cmd(VOCAL_SYS_S *vocal_sys)
             volume.volume  = nwk_dev[i].volume;
             volume.mute    = nwk_dev[i].mute;
             
-            record->set(record, nwk_dev[i].device_id, DEV_TYPE_MIC, &volume, &idx);
-            mcp_dev->set_info(mcp_dev, SPK_DEV_NUM + idx, &volume);
-
-            record->evt.rcd_evt_volume_chg = STM_TRUE;
-            ret = STM_SUCCESS;
+            if(STM_SUCCESS == record->set(record, nwk_dev[i].device_id, DEV_TYPE_MIC, &volume, &idx)) {
+                record->evt.rcd_evt_volume_chg = STM_TRUE;
+                mcp_dev->set_info(mcp_dev, SPK_DEV_NUM + idx, &volume);
+                ret = STM_SUCCESS;
+            }
         }
     }
 
@@ -179,7 +179,10 @@ static void vocal_sync_pc_cmd(VOCAL_SYS_S *vocal)
                 spk_dev->nwk_dev[i].volume  = mcp_dev->info.volume[0].volume;
                 spk_dev->nwk_dev[i].mute    = mcp_dev->info.volume[0].mute;
                 spk_dev->nwk_dev[i].cmd_pc  = STM_TRUE;
-                record->set(record, spk_dev->nwk_dev[i].device_id, DEV_TYPE_SPK, &mcp_dev->info.volume[0], &idx);
+                if(STM_SUCCESS == record->set(record,
+                        spk_dev->nwk_dev[i].device_id, DEV_TYPE_SPK, &mcp_dev->info.volume[0], &idx)) {
+                    record->evt.rcd_evt_volume_chg = STM_TRUE;
+                }
             }
         }
         BIT_CLR(mcp_dev->info.mcp_req, 0);
@@ -190,8 +193,12 @@ static void vocal_sync_pc_cmd(VOCAL_SYS_S *vocal)
             mic_dev->nwk_dev[i].volume  = mcp_dev->info.volume[SPK_CFG_NUM + i].volume;
             mic_dev->nwk_dev[i].mute    = mcp_dev->info.volume[SPK_CFG_NUM + i].mute;
             mic_dev->nwk_dev[i].cmd_pc  = STM_TRUE;
-            record->set(record, mic_dev->nwk_dev[i].device_id, DEV_TYPE_MIC, &mcp_dev->info.volume[SPK_CFG_NUM + i], &idx);
+            if(STM_SUCCESS == record->set(record,
+                    mic_dev->nwk_dev[i].device_id, DEV_TYPE_MIC, &mcp_dev->info.volume[SPK_CFG_NUM + i], &idx)) {
+                record->evt.rcd_evt_volume_chg = STM_TRUE;
+            }
         }
+        
         BIT_CLR(mcp_dev->info.mcp_req, SPK_CFG_NUM + i);
     }
 
@@ -249,23 +256,29 @@ static void vocal_nwk_pairing(VOCAL_SYS_S *vocal)
     vocal->sys_evt.req_pairing = STM_FALSE;
 }
 
-void stop_init(void)
+static void restore_led_init(void)
 {
-    GPIO_InitTypeDef    init_struct = {0};
-    
-    init_struct.GPIO_Mode   = GPIO_Mode_IN;
-    init_struct.GPIO_PuPd   = GPIO_PuPd_UP;
-    init_struct.GPIO_Speed  = GPIO_Speed_Level_3;
-    init_struct.GPIO_Pin    = PAIR_PIN_SPK | PAIR_PIN_MIC;
-    GPIO_Init(PAIR_GPIO, &init_struct);
+    GPIO_InitTypeDef    gpio_struct;
+
+    gpio_struct.GPIO_Speed  = GPIO_Speed_Level_3;
+    gpio_struct.GPIO_Mode   = GPIO_Mode_OUT;
+    gpio_struct.GPIO_PuPd   = GPIO_PuPd_UP;
+    gpio_struct.GPIO_OType  = GPIO_OType_OD;
+    gpio_struct.GPIO_Pin    = LED_PIN_MIC4;
+
+    GPIO_Init(LED_GPIO_MIC4, &gpio_struct);
+    GPIO_SetBits(LED_GPIO_MIC4, gpio_struct.GPIO_Pin);
 }
 
-int stop_detect(void)
+static void restore_led_bright(void)
 {
-    uint16_t port_value;
-    port_value = GPIO_ReadInputData(PAIR_GPIO);
+    GPIO_ResetBits(LED_GPIO_MIC4, LED_PIN_MIC4);
+}
 
-    return ((~port_value) & PAIR_PIN_SPK) || ((~port_value) & PAIR_PIN_MIC);
+static void vocal_reboot(void)
+{
+    __disable_irq();
+    NVIC_SystemReset();
 }
 
 static void vocal_exti_init(void)
@@ -313,21 +326,14 @@ void vocal_init(VOCAL_SYS_S *vocal)
     vocal->nwk_pairing  = vocal_nwk_pairing;
 
     timer_init();
+    restore_led_init();
     
     led_init(vocal);
-
     pair_init(vocal);
 
-    stop_init();   
-    if(stop_detect()) {
-        vocal->led->set(vocal->led, DEV_TYPE_SPK, 3, LED_STATUS_CONNECT);
-        while(1);
-    }
-
     mic_dev_init(vocal);
-    
     spk_dev_init(vocal);
-    
+
     record_init(vocal);
 
     vocal->mic_dev->ehif.get_status(&vocal->mic_dev->ehif);
@@ -371,6 +377,14 @@ void vocal_working(VOCAL_SYS_S *vocal)
         pair_detect();
         if(vocal->sys_evt.req_pairing) {
             vocal->nwk_pairing(vocal);
+        }
+
+        if(vocal->sys_evt.req_record_clean) {
+            vocal->record->erase(vocal->record);
+            restore_led_bright();
+            delay_ms(3000);
+            vocal->sys_evt.req_record_clean = STM_FALSE;
+            vocal_reboot();
         }
 
         timer_task_process();

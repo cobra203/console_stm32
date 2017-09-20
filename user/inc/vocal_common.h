@@ -81,6 +81,11 @@ inline static uint32_t non_align_data32(void *addr)
     return data.i;
 }
 
+inline static void error_reboot(void)
+{
+    *(uint32_t *)0 = 0;
+}
+
 typedef enum vocal_dev_type_e
 {
     DEV_TYPE_SPK = 0,  

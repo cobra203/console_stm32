@@ -211,20 +211,20 @@ void spi_init(SPI_S *spi, SPI_TypeDef *spi_id)
     SPI_InitTypeDef     spi_struct  = {0};
     
     if(spi_id == SPI2) {
+        spi->gpio_spi           = MCP_GPIO_SPI;
         spi->pin_sck            = MCP_PIN_SCK;
         spi->pin_miso           = MCP_PIN_MISO;
-        spi->pin_mosi           = MCP_PIN_MOSI;
-        spi->gpio_spi           = MCP_GPIO_SPI;
+        spi->pin_mosi           = MCP_PIN_MOSI;  
  
         spi2_st_init(spi);
         spi->transfer = spi_slave_transfer;
         return;
     }
     else if(spi_id == SPI1) {
+        spi->gpio_spi           = TI_GPIO_SPI;
         spi->pin_sck            = TI_PIN_SCK;
         spi->pin_miso           = TI_PIN_MISO; 
         spi->pin_mosi           = TI_PIN_MOSI;
-        spi->gpio_spi           = TI_GPIO_SPI;
         spi_struct.SPI_Mode     = SPI_Mode_Master;
 
         spi1_st_init(spi);
