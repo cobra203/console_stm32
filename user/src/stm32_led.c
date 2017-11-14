@@ -61,8 +61,7 @@ static void _led_callback_func(void *args)
 static void _led_doing(STM32_LED_S *led)
 {
 #if 1
-    if(led->timer < TIMERS_NUM) {
-        
+    if(led->timer < TIMERS_NUM) {   
         timer_free(&led->timer);
         led->dark(led);
     }

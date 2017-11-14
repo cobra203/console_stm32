@@ -45,11 +45,13 @@ static void _timer_touch_process(uint8_t idx)
 
 void timer_free(uint8_t *timer)
 {
-    BIT_CLR(basic_timer.active, *timer);
-    BIT_CLR(basic_timer.touch, *timer);
-    basic_timer.delay_count[*timer] = 0;
-    basic_timer.callback_func[*timer] = 0;
-    *timer = TIMERS_NUM;
+    if(*timer < TIMERS_NUM) {
+        BIT_CLR(basic_timer.active, *timer);
+        BIT_CLR(basic_timer.touch, *timer);
+        basic_timer.delay_count[*timer] = 0;
+        basic_timer.callback_func[*timer] = 0;
+        *timer = TIMERS_NUM;
+    }
 }
 
 void timer_set_reload(uint8_t id, uint32_t reload)

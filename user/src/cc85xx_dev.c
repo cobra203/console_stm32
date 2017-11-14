@@ -113,24 +113,14 @@ static void _dev_set_volume(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type, RANG_OF_SE
     }
 }
 
-static void _dev_nwk_pairing_callback(void *args)
+static void dev_nwk_pairing(CC85XX_DEV_S *dev, uint8_t enable)
 {
-    CC85XX_DEV_S    *dev = (CC85XX_DEV_S *)args;
-    
-    if(dev->pair_status.flag) {
-        dev->ehif.nwm_control_signal(&dev->ehif, STM_DISABLE);
-    }
-}
-static void dev_nwk_pairing(CC85XX_DEV_S *dev, uint32_t time)
-{
-    uint8_t timer;
-    
-    dev->ehif.nwm_control_signal(&dev->ehif, STM_ENABLE);
-    timer_task(&timer, TMR_ONCE, time, NULL, _dev_nwk_pairing_callback, dev);
+    dev->ehif.nwm_control_signal(&dev->ehif, enable);
 }
 
 static void dev_nwk_chg_detect(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type)
 {
+    uint8_t                 nwm_dev_exist = STM_FALSE;
     int                     i;
     EHIF_NWM_GET_STATUS_S   nwm_status = {0};
     uint32_t                device_id  = 0;
@@ -166,10 +156,17 @@ static void dev_nwk_chg_detect(CC85XX_DEV_S *dev, VOCAL_DEV_TYPE_E type)
             dev->new_nwk_info[i].device_id = device_id;
             dev->new_nwk_info[i].ach_used  = _auido_channel_get(ach_used);
             dev->new_nwk_info[i].slot      = (nwm_status.dev_data[15 + i*16] >> 1) & 0x7;
+            nwm_dev_exist = STM_TRUE;
         }
     }
 
     dev->nwk_stable = STM_TRUE;
+    if(nwm_dev_exist == STM_FALSE) {
+        dev->ehif.pm_set_state(&dev->ehif, 4);
+    }
+    else {
+        dev->ehif.pm_set_state(&dev->ehif, 5);
+    }
     DEBUG("--stable--\n");
     
     if(DEV_TYPE_SPK == type) {

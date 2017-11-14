@@ -68,6 +68,7 @@ typedef struct cc85xx_ehif_s
     void    (*nwm_control_enable)   (struct cc85xx_ehif_s *, uint8_t);
     void    (*nwm_control_signal)   (struct cc85xx_ehif_s *, uint8_t);
     void    (*nwm_get_status)       (struct cc85xx_ehif_s *, EHIF_NWM_GET_STATUS_S *);
+    void    (*pm_set_state)         (struct cc85xx_ehif_s *, uint8_t);
     void    (*vc_set_volume)        (struct cc85xx_ehif_s *, EHIF_SET_VOLUME_S *);
     void    (*vc_get_volume)        (struct cc85xx_ehif_s *, EHIF_GET_VOLUME_S *, uint16_t *);
     void    (*rc_get_data)          (struct cc85xx_ehif_s *, uint8_t, uint8_t *, uint8_t *);

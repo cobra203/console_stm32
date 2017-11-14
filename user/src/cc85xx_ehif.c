@@ -258,6 +258,11 @@ static void ehif_NWM_GET_STATUS(CC85XX_EHIF_S *ehif, EHIF_NWM_GET_STATUS_S *nwm_
     _basic_READ(ehif, sizeof(EHIF_NWM_GET_STATUS_S), nwm_status, &ehif->status);
 }
 
+static void ehif_PM_SET_STATE(CC85XX_EHIF_S *ehif, uint8_t state)
+{
+    _basic_CMD_REQ(ehif, CMD_PM_SET_STATE, 1, &state, &ehif->status);
+}
+
 static void ehif_VC_SET_VOLUME(CC85XX_EHIF_S *ehif, EHIF_SET_VOLUME_S *set_volume)
 {
     void *pdata = (void *)set_volume;
@@ -302,6 +307,7 @@ void ehif_init(CC85XX_EHIF_S *ehif, VOCAL_DEV_TYPE_E dev_type)
     ehif->nwm_control_enable    = ehif_NWM_CONTROL_ENABLE;
     ehif->nwm_control_signal    = ehif_NWM_CONTROL_SIGNAL;
     ehif->nwm_get_status        = ehif_NWM_GET_STATUS;
+    ehif->pm_set_state          = ehif_PM_SET_STATE;
     ehif->vc_set_volume         = ehif_VC_SET_VOLUME;
     ehif->vc_get_volume         = ehif_VC_GET_VOLUME;
     ehif->rc_get_data           = ehif_RC_GET_DATA;

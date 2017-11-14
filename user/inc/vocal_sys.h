@@ -40,6 +40,9 @@ typedef struct vocal_sys_s
     void                    (*nwk_pairing)      (struct vocal_sys_s *);
 } VOCAL_SYS_S;
 
+void debug_led_bright(void);
+void debug_led_dark(void);
+
 void vocal_nwk_pairing_callback(void *args);
 void vocal_init(VOCAL_SYS_S *vocal);
 void vocal_working(VOCAL_SYS_S *vocal);
