@@ -14,6 +14,9 @@ struct mcp2210_dev_s;
 struct vocal_record_s;
 struct vocal_led_s;
 
+#define DEFAULT_SPK_VOLUME 100
+#define DEFAULT_MIC_VOLUME 100
+
 typedef struct sys_evt_s
 {
     uint8_t req_pairing         :1;

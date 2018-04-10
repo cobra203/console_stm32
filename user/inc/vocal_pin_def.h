@@ -9,7 +9,7 @@
 #define VER_DEBUG_DEMO      1
 #define VER_DEBUG_ST_LINK   2
 
-#define VERSION VER_DEBUG_DEMO
+#define VERSION VER_RELEASE
 
 #if (VERSION == VER_RELEASE)
 

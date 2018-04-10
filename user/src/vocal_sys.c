@@ -58,7 +58,7 @@ static void vocal_sync_nwk_dev(VOCAL_SYS_S *vocal_sys, VOCAL_DEV_TYPE_E type)
 
     for(i = 0; i < dev_num; i++) {
         if(STM_TRUE == flag[i]) {
-            volume.volume   = (DEV_TYPE_SPK == type) ? 80 : 80;
+            volume.volume   = (DEV_TYPE_SPK == type) ? DEFAULT_SPK_VOLUME : DEFAULT_MIC_VOLUME;
             volume.mute     = 0;
             if(DEV_TYPE_SPK == type && record->active & 0xf) {
                 volume.volume   = record->spk_vl.volume;
