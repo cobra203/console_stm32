@@ -10,14 +10,16 @@ typedef struct led_gpio_pin_s
     uint16_t        pin;
 } LED_GPIO_PIN_S;
 
-static LED_GPIO_PIN_S led_table_id_transform[SPK_DEV_NUM + MIC_DEV_NUM] = 
+static LED_GPIO_PIN_S led_table_id_transform[SPK_DEV_NUM + MIC_DEV_NUM + ERR_LED_NUM] = 
 {
     {LED_GPIO_SPK1, LED_PIN_SPK1},
     {LED_GPIO_SPK2, LED_PIN_SPK2},
     {LED_GPIO_SPK3, LED_PIN_SPK3},
     {LED_GPIO_SPK4, LED_PIN_SPK4},
     {LED_GPIO_MIC1, LED_PIN_MIC1},
-    {LED_GPIO_MIC2, LED_PIN_MIC2}
+    {LED_GPIO_MIC2, LED_PIN_MIC2},
+    {LED_GPIO_MIC3, LED_PIN_MIC3},
+    {LED_GPIO_MIC4, LED_PIN_MIC4},
 };
 
 static void _led_id_transform(uint8_t id, uint16_t *pin, GPIO_TypeDef **port)

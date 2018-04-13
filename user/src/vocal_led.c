@@ -7,6 +7,8 @@ static void led_status_set(VOCAL_LED_S *led, VOCAL_DEV_TYPE_E type, uint8_t idx,
 {
     STM32_LED_S *led_head = (type == DEV_TYPE_SPK) ? &led->spk_led[0] : &led->mic_led[0];
 
+	led_head = (type == DEV_TYPE_BUTT) ? &led->err_led[0] : led_head;
+
     //DEBUG("LED    : set %s[%d] mode=%d\n", (DEV_TYPE_SPK == type) ? "SPK" : "MIC", idx, mode);
     switch(mode) {
     case LED_STATUS_CLOSED:
@@ -44,5 +46,11 @@ void led_init(VOCAL_SYS_S *vocal_sys)
         leds.mic_led[i].init(&leds.mic_led[i], i + SPK_DEV_NUM);
         leds.set(&leds, DEV_TYPE_MIC, i, LED_STATUS_CLOSED);
     }
+
+	for(i = 0; i < ERR_LED_NUM; i++) {
+		leds.err_led[i].init = stm32_led_init;
+		leds.err_led[i].init(&leds.err_led[i], i + SPK_DEV_NUM + MIC_DEV_NUM);
+		leds.set(&leds, DEV_TYPE_BUTT, i, LED_STATUS_CLOSED);
+	}
 }
 

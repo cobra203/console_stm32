@@ -28,6 +28,8 @@
 #define     MIC_CFG_NUM     2
 #define     SPK_CFG_NUM     1
 
+#define		ERR_LED_NUM		2
+
 typedef union data_16_un {
     uint16_t i;
     uint8_t  s[2];
@@ -90,6 +92,7 @@ typedef enum vocal_dev_type_e
 {
     DEV_TYPE_SPK = 0,  
     DEV_TYPE_MIC,
+    DEV_TYPE_BUTT,
 } VOCAL_DEV_TYPE_E;
 
 typedef struct record_volume_s

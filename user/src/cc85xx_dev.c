@@ -2,6 +2,7 @@
 #include <stm32_timer.h>
 #include <vocal_sys.h>
 #include <vocal_record.h>
+#include <vocal_led.h>
 #include <debug.h>
 
 #include <string.h>
@@ -254,10 +255,21 @@ void mic_dev_init(VOCAL_SYS_S *vocal_sys)
 
 void spk_detect(VOCAL_SYS_S *vocal_sys)
 {
+	static int	cc85xx_err_flag = STM_FALSE;
+	VOCAL_LED_S *led            = vocal_sys->led;
+	
     spk_dev.ehif.get_status(&spk_dev.ehif);
-    if(spk_dev.ehif.status.pwr_state > 5) {
+    if(spk_dev.ehif.status.pwr_state > 5 || spk_dev.ehif.status.pwr_state == 0) {
+		if(STM_FALSE == cc85xx_err_flag) {
+			led->set(led, DEV_TYPE_BUTT, DEV_TYPE_SPK, LED_STATUS_CONNECT);
+			cc85xx_err_flag = STM_TRUE;
+		}
         return;
     }
+	else if (STM_TRUE == cc85xx_err_flag) {
+		led->set(led, DEV_TYPE_BUTT, DEV_TYPE_SPK, LED_STATUS_CLOSED);
+		cc85xx_err_flag = STM_FALSE;
+	}
 
     if(!spk_dev.nwk_enable) {
         spk_dev.ehif.nwm_control_enable(&spk_dev.ehif, STM_DISABLE);
@@ -273,10 +285,21 @@ void spk_detect(VOCAL_SYS_S *vocal_sys)
 
 void mic_detect(VOCAL_SYS_S *vocal_sys)
 {
+	static int	cc85xx_err_flag = STM_FALSE;
+	VOCAL_LED_S *led			= vocal_sys->led;
+
     mic_dev.ehif.get_status(&mic_dev.ehif);
-    if(mic_dev.ehif.status.pwr_state > 5) {
+    if(mic_dev.ehif.status.pwr_state > 5 || spk_dev.ehif.status.pwr_state == 0) {
+        if(STM_FALSE == cc85xx_err_flag) {
+			led->set(led, DEV_TYPE_BUTT, DEV_TYPE_MIC, LED_STATUS_CONNECT);
+			cc85xx_err_flag = STM_TRUE;
+		}
         return;
     }
+	else if (STM_TRUE == cc85xx_err_flag) {
+		led->set(led, DEV_TYPE_BUTT, DEV_TYPE_MIC, LED_STATUS_CLOSED);
+		cc85xx_err_flag = STM_FALSE;
+	}
 
     if(!mic_dev.nwk_enable) {
         mic_dev.ehif.nwm_control_enable(&mic_dev.ehif, STM_DISABLE);
