@@ -259,6 +259,7 @@ void spk_detect(VOCAL_SYS_S *vocal_sys)
 	VOCAL_LED_S *led            = vocal_sys->led;
 	
     spk_dev.ehif.get_status(&spk_dev.ehif);
+	#if 1
     if(spk_dev.ehif.status.pwr_state > 5 || spk_dev.ehif.status.pwr_state == 0) {
 		if(STM_FALSE == cc85xx_err_flag) {
 			led->set(led, DEV_TYPE_BUTT, DEV_TYPE_SPK, LED_STATUS_CONNECT);
@@ -270,6 +271,7 @@ void spk_detect(VOCAL_SYS_S *vocal_sys)
 		led->set(led, DEV_TYPE_BUTT, DEV_TYPE_SPK, LED_STATUS_CLOSED);
 		cc85xx_err_flag = STM_FALSE;
 	}
+	#endif
 
     if(!spk_dev.nwk_enable) {
         spk_dev.ehif.nwm_control_enable(&spk_dev.ehif, STM_DISABLE);
@@ -289,6 +291,7 @@ void mic_detect(VOCAL_SYS_S *vocal_sys)
 	VOCAL_LED_S *led			= vocal_sys->led;
 
     mic_dev.ehif.get_status(&mic_dev.ehif);
+	#if 1
     if(mic_dev.ehif.status.pwr_state > 5 || spk_dev.ehif.status.pwr_state == 0) {
         if(STM_FALSE == cc85xx_err_flag) {
 			led->set(led, DEV_TYPE_BUTT, DEV_TYPE_MIC, LED_STATUS_CONNECT);
@@ -300,6 +303,7 @@ void mic_detect(VOCAL_SYS_S *vocal_sys)
 		led->set(led, DEV_TYPE_BUTT, DEV_TYPE_MIC, LED_STATUS_CLOSED);
 		cc85xx_err_flag = STM_FALSE;
 	}
+	#endif
 
     if(!mic_dev.nwk_enable) {
         mic_dev.ehif.nwm_control_enable(&mic_dev.ehif, STM_DISABLE);

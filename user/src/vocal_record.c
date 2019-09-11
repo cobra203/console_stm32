@@ -200,7 +200,7 @@ static void record_dev_id_init(VOCAL_RECORD_S *record)
     FOR_RECORD_ITEM_ADDR_ID(&item_idx, &item_base_addr) {
 
         _flash_read_halfword(item_base_addr, &flag);
-        //DEBUG("0x%08x: flag=0x%02x\n", item_base_addr, flag);
+        DEBUG("0x%08x: flag=0x%02x\n", item_base_addr, flag);
 
         /* used */
         if(flag == 0x0) {
@@ -260,12 +260,12 @@ static void record_volume_init(VOCAL_RECORD_S *record)
     uint8_t     volume;
     uint32_t    item_base_addr;
 
-    DEBUG("record_volume_init\n");
+    //DEBUG("record_volume_init\n");
     FOR_RECORD_ITEM_ADDR_VL(&item_idx, &item_base_addr) {
 
         _flash_read_halfword(item_base_addr, &data);
         flag = data & 0xff;
-        //DEBUG("0x%08x: 0x%04x, flag=0x%02x\n", item_base_addr, data, flag);
+        DEBUG("0x%08x: 0x%04x, flag=0x%02x\n", item_base_addr, data, flag);
 
         /* used */
         if(flag == 0) {
@@ -434,6 +434,8 @@ void record_init(VOCAL_SYS_S *vocal_sys)
     record.erase        = record_erase;
 
     vocal_sys->record   = &record;
+
+	//record.erase(&record);
 
     record.dev_id_init(&record);
     record.volume_init(&record);
